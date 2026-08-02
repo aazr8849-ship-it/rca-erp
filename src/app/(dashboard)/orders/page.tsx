@@ -32,12 +32,12 @@ export default function OrdersPage() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns: Column<Order>[] = [
-    { key: "code", header: "订单号", width: "140px", render: (r) => <Link href={`/orders/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "订单号", width: "140px", render: (r) => <Link href={`/orders/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "customer_name", header: "客户", render: (r) => <Link href={`/customers/${r.customer_id}`} className="text-sm hover:underline">{r.customer_name}</Link> },
     { key: "order_date", header: "下单日期", width: "110px", render: (r) => <span className="text-xs">{formatDate(r.order_date)}</span> },
     { key: "delivery_date", header: "交货日期", width: "110px", render: (r) => <span className="text-xs">{formatDate(r.delivery_date)}</span> },
     { key: "currency", header: "币种", width: "60px" },
-    { key: "total_amount", header: "总金额", width: "120px", align: "right", render: (r) => <span className="text-sm font-medium text-[#3298cb]">{formatCurrency(r.total_amount, r.currency)}</span> },
+    { key: "total_amount", header: "总金额", width: "120px", align: "right", render: (r) => <span className="text-sm font-medium text-[#38BDF8]">{formatCurrency(r.total_amount, r.currency)}</span> },
     { key: "items_count", header: "明细", width: "60px", align: "center", render: (r) => <span className="text-xs">{(r.items || []).length}</span> },
     { key: "status", header: "状态", width: "90px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "actions", header: "操作", width: "80px", align: "center", render: (r) => <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); router.push(`/orders/${r.id}`); }}><Eye className="h-3.5 w-3.5" /></Button> },

@@ -1,8 +1,8 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Eye, Pencil, Trash2, Package, Search } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Package, Search, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { PageHeader, ActionButton } from "@/components/common/page-header";
@@ -58,15 +58,21 @@ export default function ProductsPage() {
     { key: "code", header: "编码", width: "100px", render: (r) => <span className="font-mono text-xs">{r.code}</span> },
     { key: "name", header: "产品名称", render: (r) => (
       <Link href={`/products/${r.id}`} className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400 shrink-0"><Package className="h-4 w-4" /></div>
-        <div><div className="text-sm font-medium text-[#3298cb] hover:underline">{r.name}</div>{r.name_en && <div className="text-xs text-gray-500">{r.name_en}</div>}</div>
+        {r.image_urls && r.image_urls.length > 0 ? (
+          <div className="w-10 h-10 rounded-md overflow-hidden border border-slate-200 shrink-0">
+            <img src={r.image_urls[0]} alt={r.name} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 shrink-0"><Package className="h-4 w-4" /></div>
+        )}
+        <div><div className="text-sm font-medium text-slate-800 hover:text-[#38BDF8] hover:underline">{r.name}</div>{r.name_en && <div className="text-xs text-slate-500">{r.name_en}</div>}</div>
       </Link>
     ) },
     { key: "oem_number", header: "OEM号", width: "140px", render: (r) => <span className="text-xs font-mono">{r.oem_number || "-"}</span> },
     { key: "category_name", header: "分类", width: "100px" },
     { key: "brand", header: "品牌", width: "80px" },
     { key: "cost_price", header: "成本价", width: "100px", align: "right", render: (r) => <span className="text-xs">{formatCurrency(r.cost_price, "CNY")}</span> },
-    { key: "sale_price", header: "销售价", width: "100px", align: "right", render: (r) => <span className="text-xs font-medium text-[#3298cb]">{formatCurrency(r.sale_price, "USD")}</span> },
+    { key: "sale_price", header: "销售价", width: "100px", align: "right", render: (r) => <span className="text-xs font-medium text-[#38BDF8]">{formatCurrency(r.sale_price, "USD")}</span> },
     { key: "stock", header: "库存", width: "100px", align: "right", render: (r) => { const s = getStock(r.id); return s ? <span className={s.available_quantity < 50 ? "text-red-500 text-xs font-medium" : "text-xs"}>{s.available_quantity} {r.unit}</span> : <span className="text-xs text-gray-400">无库存</span>; } },
     { key: "status", header: "状态", width: "80px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "actions", header: "操作", width: "120px", align: "center", render: (r) => (
@@ -137,7 +143,7 @@ export default function ProductsPage() {
 function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; product: Product | null; onSave: (d: Partial<Product>) => void }) {
   const { categories } = useStore();
   const [form, setForm] = useState<Partial<Product>>({});
-  const [modelInput, setModelInput] = useState("__all__");
+  const [modelInput, setModelInput] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -186,11 +192,62 @@ function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: bool
               <div className="flex flex-wrap gap-1.5">{(form.applicable_models || []).map((m, i) => <Badge key={i} variant="secondary" className="text-xs">{m}<button type="button" onClick={() => setForm({ ...form, applicable_models: (form.applicable_models || []).filter((_, idx) => idx !== i) })} className="ml-1 hover:text-red-500">×</button></Badge>)}</div>
             </div>
           </Field>
+          <Field label="产品图片" full>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                {(form.image_urls || []).map((url, i) => (
+                  <div key={i} className="relative w-24 h-24 rounded-md overflow-hidden border border-slate-200 group">
+                    <img src={url} alt={`产品图片${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, image_urls: (form.image_urls || []).filter((_, idx) => idx !== i) })}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      aria-label="删除图片"
+                    >
+                      <X size={12} />
+                    </button>
+                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-sky-500/90 text-white text-[9px] text-center py-0.5">主图</span>}
+                  </div>
+                ))}
+                <label className="w-24 h-24 rounded-md border-2 border-dashed border-slate-300 hover:border-sky-400 hover:bg-sky-50/40 cursor-pointer flex flex-col items-center justify-center text-slate-400 hover:text-sky-500 transition-colors">
+                  <ImagePlus className="h-5 w-5 mb-1" />
+                  <span className="text-[10px]">添加图片</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length === 0) return;
+                      // 校验大小（≤2MB）和类型
+                      const valid = files.filter((f) => {
+                        if (!f.type.startsWith("image/")) { toast.error(`${f.name} 不是图片文件`); return false; }
+                        if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name} 超过 2MB`); return false; }
+                        return true;
+                      });
+                      // 转 base64 data URL（mock 数据存储，不实际上传）
+                      const dataUrls = await Promise.all(valid.map((f) => new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(f);
+                      })));
+                      setForm({ ...form, image_urls: [...(form.image_urls || []), ...dataUrls] });
+                      toast.success(`已添加 ${dataUrls.length} 张图片`);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] text-slate-400">支持 JPG/PNG/WEBP/GIF，单张≤2MB，可选填，第一张为产品主图</p>
+            </div>
+          </Field>
           <Field label="产品描述" full><Textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => { if (!form.name) { toast.error("请填写产品名称"); return; } onSave(form); }} className="bg-[#3298cb] hover:bg-[#2c87b3]">{product ? "保存修改" : "创建产品"}</Button>
+          <Button onClick={() => { if (!form.name) { toast.error("请填写产品名称"); return; } onSave(form); }} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{product ? "保存修改" : "创建产品"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

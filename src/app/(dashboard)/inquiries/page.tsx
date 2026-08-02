@@ -35,7 +35,7 @@ export default function InquiriesPage() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns: Column<Inquiry>[] = [
-    { key: "code", header: "询盘号", width: "140px", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "询盘号", width: "140px", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "customer_name", header: "客户", width: "180px", render: (r) => <Link href={`/customers/${r.customer_id}`} className="text-sm hover:underline">{r.customer_name}</Link> },
     { key: "subject", header: "主题", render: (r) => <span className="text-sm">{r.subject}</span> },
     { key: "source", header: "来源", width: "80px", render: (r) => <span className="text-xs">{SOURCE_LABELS[r.source]}</span> },

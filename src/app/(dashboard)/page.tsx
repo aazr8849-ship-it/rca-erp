@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatRelativeTime, cn } from "@/lib/utils";
 
-const COLORS = ["#3298cb", "#c76747", "#437453", "#9c7d3d", "#567a9e", "#94524c", "#417f9e", "#8a6b5a"];
+const COLORS = ["#38BDF8", "#C4654A", "#87A878", "#E8A87C", "#9B9285", "#0EA5E9", "#1E293B", "#E6E1D4"];
 
 export default function DashboardPage() {
   const {
@@ -66,7 +66,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* 欢迎横幅 */}
-      <div className="bg-gradient-to-r from-[#364e5b] to-[#3298cb] rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-[#0F172A] to-[#38BDF8] rounded-lg p-6 text-white">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold">早上好，管理员 👋</h1>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-1 border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-[#3298cb]" />
+              <AlertCircle className="h-4 w-4 text-[#38BDF8]" />
               待办提醒
             </CardTitle>
           </CardHeader>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#3298cb]" />
+              <TrendingUp className="h-4 w-4 text-[#38BDF8]" />
               近 7 个月订单趋势
             </CardTitle>
           </CardHeader>
@@ -156,8 +156,8 @@ export default function DashboardPage() {
                 <YAxis yAxisId="right" orientation="right" stroke="#888" fontSize={11} tickFormatter={(v) => `${(v / 10000).toFixed(0)}万`} />
                 <Tooltip contentStyle={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, fontSize: 12 }} formatter={(value: any, name: any) => { if (name === "金额") return [`¥${value.toLocaleString()}`, name]; return [value, name]; }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar yAxisId="right" dataKey="amount" fill="#3298cb" name="金额" radius={[4, 4, 0, 0]} />
-                <Line yAxisId="left" type="monotone" dataKey="count" stroke="#c76747" strokeWidth={2} name="订单数" dot={{ fill: "#c76747", r: 3 }} />
+                <Bar yAxisId="right" dataKey="amount" fill="#38BDF8" name="金额" radius={[4, 4, 0, 0]} />
+                <Line yAxisId="left" type="monotone" dataKey="count" stroke="#C4654A" strokeWidth={2} name="订单数" dot={{ fill: "#C4654A", r: 3 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#3298cb]" />
+              <Users className="h-4 w-4 text-[#38BDF8]" />
               客户国家分布
             </CardTitle>
           </CardHeader>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#3298cb]" />
+              <Clock className="h-4 w-4 text-[#38BDF8]" />
               最近订单
             </CardTitle>
           </CardHeader>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                     <div className="text-xs text-gray-500 truncate">{order.customer_name} · {formatRelativeTime(order.created_at)}</div>
                   </div>
                   <div className="text-right shrink-0 ml-2">
-                    <div className="text-sm font-semibold text-[#3298cb]">{formatCurrency(order.total_amount, order.currency)}</div>
+                    <div className="text-sm font-semibold text-[#38BDF8]">{formatCurrency(order.total_amount, order.currency)}</div>
                     <Badge variant="secondary" className={cn("text-[10px] mt-0.5", order.status === "completed" && "bg-green-100 text-green-700", order.status === "pending" && "bg-yellow-100 text-yellow-700", order.status === "cancelled" && "bg-red-100 text-red-700", (order.status === "confirmed" || order.status === "producing" || order.status === "shipped") && "bg-blue-100 text-blue-700")}>
                       {order.status === "pending" && "待处理"}
                       {order.status === "confirmed" && "已确认"}

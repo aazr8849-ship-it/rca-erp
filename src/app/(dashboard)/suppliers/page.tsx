@@ -52,7 +52,7 @@ export default function SuppliersPage() {
 
   const columns: Column<Supplier>[] = [
     { key: "code", header: "编码", width: "120px", render: (r) => <span className="font-mono text-xs">{r.code}</span> },
-    { key: "name", header: "供应商名称", render: (r) => <Link href={`/suppliers/${r.id}`} className="text-sm font-medium text-[#3298cb] hover:underline">{r.name}</Link> },
+    { key: "name", header: "供应商名称", render: (r) => <Link href={`/suppliers/${r.id}`} className="text-sm font-medium text-[#38BDF8] hover:underline">{r.name}</Link> },
     { key: "contact_person", header: "联系人", width: "100px", render: (r) => <div><div className="text-sm">{r.contact_person}</div><div className="text-xs text-gray-500">{r.contact_phone || "-"}</div></div> },
     { key: "country", header: "国家", width: "80px" },
     { key: "main_category", header: "主营品类", render: (r) => <div className="flex flex-wrap gap-1">{(r.main_category || []).slice(0, 3).map((c, i) => <Badge key={i} variant="secondary" className="text-[10px]">{c}</Badge>)}{(r.main_category || []).length > 3 && <Badge variant="outline" className="text-[10px]">+{r.main_category.length - 3}</Badge>}</div> },
@@ -141,7 +141,7 @@ export function StarRating({ value, onChange, readOnly, size = 20 }: { value: nu
 
 function SupplierFormDialog({ open, onOpenChange, supplier, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; supplier: Supplier | null; onSave: (d: Partial<Supplier>) => void }) {
   const [form, setForm] = useState<Partial<Supplier>>({});
-  const [categoryInput, setCategoryInput] = useState("__all__");
+  const [categoryInput, setCategoryInput] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -207,7 +207,7 @@ function SupplierFormDialog({ open, onOpenChange, supplier, onSave }: { open: bo
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => { if (!form.name || !form.contact_person || !form.country) { toast.error("请填写必填项"); return; } onSave(form); }} className="bg-[#3298cb] hover:bg-[#2c87b3]">{supplier ? "保存修改" : "创建供应商"}</Button>
+          <Button onClick={() => { if (!form.name || !form.contact_person || !form.country) { toast.error("请填写必填项"); return; } onSave(form); }} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{supplier ? "保存修改" : "创建供应商"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

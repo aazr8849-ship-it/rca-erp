@@ -81,7 +81,7 @@ export default function CustomersPage() {
       render: (row) => (
         <Link
           href={`/customers/${row.id}`}
-          className="text-sm font-medium text-[#3298cb] hover:underline"
+          className="text-sm font-medium text-[#38BDF8] hover:underline"
         >
           {row.name}
         </Link>
@@ -547,7 +547,7 @@ function CustomerFormDialog({ open, onOpenChange, customer, onSave }: FormDialog
         </form>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={handleSubmit} className="bg-[#3298cb] hover:bg-[#2c87b3]">
+          <Button onClick={handleSubmit} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">
             {customer ? "保存修改" : "创建客户"}
           </Button>
         </DialogFooter>

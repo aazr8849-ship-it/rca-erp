@@ -8,6 +8,7 @@ import {
   User as UserIcon,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Settings as SettingsIcon,
   X,
 } from "lucide-react";
@@ -161,29 +162,56 @@ export function Header({ onMenuClick }: HeaderProps) {
                 notifications.slice(0, 8).map((n) => (
                   <div
                     key={n.id}
+                    onClick={() => {
+                      // 标记为已读
+                      useStore.setState((state) => ({
+                        notifications: state.notifications.map((item) =>
+                          item.id === n.id ? { ...item, is_read: true } : item,
+                        ),
+                      }));
+                      setNotifOpen(false);
+                      // 跳转到对应页面
+                      if (n.link) {
+                        router.push(n.link);
+                      }
+                    }}
                     className={cn(
-                      "px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer",
-                      !n.is_read && "bg-blue-50/40",
+                      "px-4 py-3 border-b last:border-b-0 hover:bg-slate-50 cursor-pointer transition-colors",
+                      !n.is_read && "bg-sky-50/50",
                     )}
                   >
                     <div className="flex items-start gap-2">
                       <div
                         className={cn(
                           "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
-                          n.type === "warning" && "bg-yellow-500",
-                          n.type === "info" && "bg-blue-500",
-                          n.type === "success" && "bg-green-500",
+                          n.type === "warning" && "bg-amber-500",
+                          n.type === "info" && "bg-sky-500",
+                          n.type === "success" && "bg-emerald-500",
+                          n.type === "error" && "bg-rose-500",
                         )}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-800">
-                          {n.title}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-medium text-slate-800 truncate">
+                            {n.title}
+                          </div>
+                          {!n.is_read && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                        <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">
                           {n.content}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-1">
-                          {formatRelativeTime(n.created_at)}
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="text-[10px] text-slate-400">
+                            {formatRelativeTime(n.created_at)}
+                          </div>
+                          {n.link && (
+                            <div className="text-[10px] text-sky-600 font-medium flex items-center gap-0.5">
+                              查看
+                              <ChevronRight size={10} />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -208,7 +236,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-[#3298cb] text-white flex items-center justify-center text-xs font-semibold">
+              <div className="w-8 h-8 rounded-full bg-[#38BDF8] text-white flex items-center justify-center text-xs font-semibold">
                 {currentUser ? getInitials(currentUser.name) : "U"}
               </div>
               <div className="hidden md:block text-left">

@@ -42,10 +42,10 @@ export default function PurchaseDetailPage() {
           <InfoCard title="采购订单信息" icon={Truck} className="lg:col-span-2">
             <div className="grid grid-cols-2 gap-x-4 gap-y-4">
               <InfoItem label="采购编码" value={<span className="font-mono">{po.code}</span>} />
-              <InfoItem label="供应商" value={<Link href={`/suppliers/${po.supplier_id}`} className="text-[#3298cb] hover:underline">{po.supplier_name}</Link>} />
+              <InfoItem label="供应商" value={<Link href={`/suppliers/${po.supplier_id}`} className="text-[#38BDF8] hover:underline">{po.supplier_name}</Link>} />
               <InfoItem label="下单日期" value={formatDate(po.order_date)} />
               <InfoItem label="币种" value={po.currency} />
-              <InfoItem label="总金额" value={<span className="text-[#3298cb] font-medium">{formatCurrency(po.total_amount, po.currency)}</span>} />
+              <InfoItem label="总金额" value={<span className="text-[#38BDF8] font-medium">{formatCurrency(po.total_amount, po.currency)}</span>} />
               <InfoItem label="状态" value={<StatusBadge status={po.status} />} />
               <InfoItem label="贸易条款" value={po.trade_terms || "-"} />
               <InfoItem label="付款条件" value={po.payment_terms || "-"} />
@@ -80,7 +80,7 @@ export default function PurchaseDetailPage() {
                   <TableCell className="text-sm text-right font-medium">{formatCurrency(Number(item.quantity) * Number(item.unit_price), po.currency)}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={7} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#3298cb] text-base">{formatCurrency(po.total_amount, po.currency)}</TableCell></TableRow>
+              <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={7} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#38BDF8] text-base">{formatCurrency(po.total_amount, po.currency)}</TableCell></TableRow>
             </TableBody>
           </Table>
         </InfoCard>
@@ -108,7 +108,7 @@ export default function PurchaseDetailPage() {
       <InfoCard title="请购单信息" icon={ClipboardList}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-4">
           <InfoItem label="请购编码" value={<span className="font-mono">{pr!.code}</span>} />
-          <InfoItem label="关联订单" value={order ? <Link href={`/orders/${order.id}`} className="text-[#3298cb] hover:underline">{order.code}</Link> : "-"} />
+          <InfoItem label="关联订单" value={order ? <Link href={`/orders/${order.id}`} className="text-[#38BDF8] hover:underline">{order.code}</Link> : "-"} />
           <InfoItem label="状态" value={<StatusBadge status={pr!.status} />} />
           <InfoItem label="创建时间" value={formatDate(pr!.created_at)} />
         </div>

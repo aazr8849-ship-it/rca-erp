@@ -57,20 +57,20 @@ const seedProducts: Product[] = [
   {
     id: "p-001", code: "PD001", name: "前制动片", name_en: "Front Brake Pad", oem_number: "OEM-TOYOTA-001",
     category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
-    image_urls: [], cost_price: 35.00, sale_price: 58.00, unit: "套", weight_kg: 1.2,
+    image_urls: ["https://images.unsplash.com/photo-1614026480209-cf5a8e0a0a8e?w=400&h=400&fit=crop"], cost_price: 35.00, sale_price: 58.00, unit: "套", weight_kg: 1.2,
     status: "active", applicable_models: ["Toyota Camry", "Toyota Corolla"],
     description: "适用于丰田卡罗拉/凯美瑞的前制动片", created_at: daysAgo(90), updated_at: daysAgo(10),
   },
   {
     id: "p-002", code: "PD002", name: "后制动片", name_en: "Rear Brake Pad", oem_number: "OEM-TOYOTA-002",
     category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
-    image_urls: [], cost_price: 32.00, sale_price: 52.00, unit: "套", weight_kg: 1.0,
+    image_urls: ["https://images.unsplash.com/photo-1611821065448-6f7d2c5b5b5b?w=400&h=400&fit=crop"], cost_price: 32.00, sale_price: 52.00, unit: "套", weight_kg: 1.0,
     status: "active", applicable_models: ["Toyota Camry"], created_at: daysAgo(85), updated_at: daysAgo(8),
   },
   {
     id: "p-003", code: "PD003", name: "机油滤芯", name_en: "Oil Filter", oem_number: "OEM-HONDA-003",
     category_id: "cat-2", category_name: "发动机配件", brand: "Mann",
-    image_urls: [], cost_price: 12.00, sale_price: 22.00, unit: "个", weight_kg: 0.3,
+    image_urls: ["https://images.unsplash.com/photo-1621697789032-45ad6dba37e2?w=400&h=400&fit=crop"], cost_price: 12.00, sale_price: 22.00, unit: "个", weight_kg: 0.3,
     status: "active", applicable_models: ["Honda Civic", "Honda Accord"],
     created_at: daysAgo(80), updated_at: daysAgo(5),
   },
@@ -439,10 +439,10 @@ const seedExchangeRates: ExchangeRate[] = [
 ];
 
 const seedNotifications: Notification[] = [
-  { id: "n-1", type: "warning", title: "应收账款逾期", content: "FIN-2026-0002 已逾期20天，金额 ¥7,000.00", is_read: false, created_at: daysAgo(1) },
-  { id: "n-2", type: "info", title: "新询盘提醒", content: "IN-2026-0004 来自Al Futtaim Motors UAE", is_read: false, created_at: daysAgo(2) },
-  { id: "n-3", type: "success", title: "订单已完成", content: "OD-2026-0002 已完成全部流程", is_read: true, created_at: daysAgo(5) },
-  { id: "n-4", type: "warning", title: "报价即将过期", content: "QT-2026-0002 还剩5天到期", is_read: false, created_at: daysAgo(3) },
+  { id: "n-1", type: "warning", title: "应收账款逾期", content: "FIN-2026-0002 已逾期20天，金额 ¥7,000.00", is_read: false, created_at: daysAgo(1), link: "/finance?tab=receivables&status=overdue", category: "receivable" },
+  { id: "n-2", type: "info", title: "新询盘提醒", content: "IN-2026-0004 来自Al Futtaim Motors UAE", is_read: false, created_at: daysAgo(2), link: "/inquiries/inq-004", category: "inquiry" },
+  { id: "n-3", type: "success", title: "订单已完成", content: "OD-2026-0002 已完成全部流程", is_read: true, created_at: daysAgo(5), link: "/orders/o-002", category: "order" },
+  { id: "n-4", type: "warning", title: "报价即将过期", content: "QT-2026-0002 还剩5天到期", is_read: false, created_at: daysAgo(3), link: "/quotations/q-002", category: "quotation" },
 ];
 
 const seedSystemSettings: SystemSettings = {
@@ -613,8 +613,15 @@ export const useStore = create<StoreState>()(
           removeItem: () => {},
         } as any;
       }),
-      version: 1,
+      version: 3,
       skipHydration: false,
+      // 版本不匹配时直接重置为初始数据
+      migrate: (_persistedState: any, version: number) => {
+        if (version < 3) {
+          return { ...initialState };
+        }
+        return _persistedState;
+      },
     },
   ),
 );

@@ -37,8 +37,8 @@ export default function DocumentsPage() {
   };
 
   const columns: Column<Document>[] = [
-    { key: "code", header: "单证编号", width: "140px", render: (r) => <Link href={`/documents/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
-    { key: "order_code", header: "关联订单", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.order_code}</Link> : "-" },
+    { key: "code", header: "单证编号", width: "140px", render: (r) => <Link href={`/documents/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
+    { key: "order_code", header: "关联订单", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.order_code}</Link> : "-" },
     { key: "document_type", header: "单证类型", width: "120px", render: (r) => <span className="text-xs">{DOCUMENT_TYPE_LABELS[r.document_type]}</span> },
     { key: "status", header: "状态", width: "100px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "issued_date", header: "签发日期", width: "120px", render: (r) => <span className="text-xs">{r.issued_date ? formatDate(r.issued_date) : "-"}</span> },
@@ -46,7 +46,7 @@ export default function DocumentsPage() {
     { key: "actions", header: "操作", width: "180px", align: "center", render: (r) => (
       <div className="flex items-center justify-center gap-1">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); router.push(`/documents/${r.id}`); }}><Eye className="h-3.5 w-3.5" /></Button>
-        {r.status === "draft" && <Button size="sm" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handleGenerate(r); }}>生成PDF</Button>}
+        {r.status === "draft" && <Button size="sm" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handleGenerate(r); }}>生成PDF</Button>}
         {r.status === "issued" && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); toast.info("PDF预览功能：实际项目中会打开PDF文件"); }}>预览</Button>}
       </div>
     ) },

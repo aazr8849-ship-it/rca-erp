@@ -95,7 +95,7 @@ export default function InquiryDetailPage() {
             <Button onClick={handleConvertToQuotation} variant="outline"><FileText className="h-3.5 w-3.5 mr-1.5" />转为报价单</Button>
           )}
           {statusFlow[inquiry.status]?.map((to) => (
-            <Button key={to} onClick={() => handleStatusChange(to)} variant={to === "cancelled" ? "destructive" : "default"} className={to !== "cancelled" ? "bg-[#3298cb] hover:bg-[#2c87b3]" : ""}>
+            <Button key={to} onClick={() => handleStatusChange(to)} variant={to === "cancelled" ? "destructive" : "default"} className={to !== "cancelled" ? "bg-[#38BDF8] hover:bg-[#0EA5E9]" : ""}>
               {statusLabels[to]}
             </Button>
           ))}
@@ -107,7 +107,7 @@ export default function InquiryDetailPage() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <InfoItem label="询盘编码" value={<span className="font-mono">{inquiry.code}</span>} />
             <InfoItem label="主题" value={inquiry.subject} />
-            <InfoItem label="客户" value={<Link href={`/customers/${inquiry.customer_id}`} className="text-[#3298cb] hover:underline">{inquiry.customer_name}</Link>} />
+            <InfoItem label="客户" value={<Link href={`/customers/${inquiry.customer_id}`} className="text-[#38BDF8] hover:underline">{inquiry.customer_name}</Link>} />
             <InfoItem label="客户国家" value={inquiry.customer_country || "-"} />
             <InfoItem label="来源" value={SOURCE_LABELS[inquiry.source]} />
             <InfoItem label="优先级" value={<StatusBadge type="priority" status={inquiry.priority} />} />
@@ -121,7 +121,7 @@ export default function InquiryDetailPage() {
           <div className="space-y-2">
             {relatedQuotations.length === 0 ? <div className="text-center py-6 text-sm text-gray-500">暂无关联报价</div> : relatedQuotations.map((q) => (
               <Link key={q.id} href={`/quotations/${q.id}`} className="flex items-center justify-between p-2.5 rounded border border-gray-100 hover:bg-gray-50">
-                <div><div className="text-xs font-mono text-[#3298cb]">{q.code}</div><div className="text-xs text-gray-500">{formatCurrency(q.total_amount, q.currency)}</div></div>
+                <div><div className="text-xs font-mono text-[#38BDF8]">{q.code}</div><div className="text-xs text-gray-500">{formatCurrency(q.total_amount, q.currency)}</div></div>
                 <StatusBadge status={q.status} />
               </Link>
             ))}

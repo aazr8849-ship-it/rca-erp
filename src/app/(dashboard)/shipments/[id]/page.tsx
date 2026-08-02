@@ -39,7 +39,7 @@ export default function ShipmentDetailPage() {
         <InfoCard title="发货信息" icon={Ship} className="lg:col-span-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <InfoItem label="发货编码" value={<span className="font-mono">{shipment.code}</span>} />
-            <InfoItem label="关联订单" value={shipment.order_code ? <Link href={`/orders/${shipment.order_id}`} className="text-[#3298cb] hover:underline">{shipment.order_code}</Link> : "-"} />
+            <InfoItem label="关联订单" value={shipment.order_code ? <Link href={`/orders/${shipment.order_id}`} className="text-[#38BDF8] hover:underline">{shipment.order_code}</Link> : "-"} />
             <InfoItem label="客户" value={shipment.customer_name || "-"} />
             <InfoItem label="发货日期" value={formatDate(shipment.shipment_date)} />
             <InfoItem label="运输方式" value={SHIPPING_METHOD_LABELS[shipment.shipping_method]} />
@@ -55,7 +55,7 @@ export default function ShipmentDetailPage() {
         {customer && (
           <InfoCard title="收货客户">
             <div className="space-y-2 text-sm">
-              <div><div className="text-xs text-gray-500">客户名称</div><Link href={`/customers/${customer.id}`} className="font-medium text-[#3298cb] hover:underline">{customer.name}</Link></div>
+              <div><div className="text-xs text-gray-500">客户名称</div><Link href={`/customers/${customer.id}`} className="font-medium text-[#38BDF8] hover:underline">{customer.name}</Link></div>
               <div><div className="text-xs text-gray-500">联系人</div><div>{customer.contact_person}</div></div>
               <div><div className="text-xs text-gray-500">电话</div><div>{customer.contact_phone || "-"}</div></div>
               <div><div className="text-xs text-gray-500">国家</div><div>{customer.country}</div></div>

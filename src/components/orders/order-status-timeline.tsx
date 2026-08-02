@@ -39,7 +39,7 @@ export function OrderStatusTimeline({ currentStatus }: { currentStatus: string }
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all",
                   isCompleted && "bg-green-500 border-green-500 text-white",
-                  isCurrent && "bg-[#3298cb] border-[#3298cb] text-white animate-pulse",
+                  isCurrent && "bg-[#38BDF8] border-[#38BDF8] text-white animate-pulse",
                   isFuture && "bg-gray-100 border-gray-300 text-gray-400",
                 )}>
                   {isCompleted ? <Check size={18} /> : isCurrent ? <Clock size={18} /> : <Circle size={18} />}

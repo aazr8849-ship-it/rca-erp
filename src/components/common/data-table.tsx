@@ -116,13 +116,13 @@ export function GenericDataTable<T>({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#364e5b] hover:bg-[#364e5b] border-none">
+            <TableRow className="bg-[#0F172A] hover:bg-[#0F172A] border-none">
               {selectable && (
                 <TableHead className="w-10 px-3">
                   <Checkbox
                     checked={allChecked || (someChecked && "indeterminate")}
                     onCheckedChange={handleSelectAll}
-                    className="border-white/60 data-[state=checked]:bg-[#3298cb] data-[state=checked]:border-[#3298cb]"
+                    className="border-white/60 data-[state=checked]:bg-[#38BDF8] data-[state=checked]:border-[#38BDF8]"
                   />
                 </TableHead>
               )}
@@ -152,7 +152,7 @@ export function GenericDataTable<T>({
                         className={cn(
                           "transition-colors",
                           sortKey === col.key
-                            ? "text-[#3298cb] bg-white"
+                            ? "text-[#38BDF8] bg-white"
                             : "text-white/60",
                         )}
                       />
@@ -187,8 +187,8 @@ export function GenericDataTable<T>({
                     key={id || idx}
                     className={cn(
                       "border-b border-gray-100 text-sm cursor-default",
-                      idx % 2 === 0 ? "bg-white" : "bg-[#eeeff0]/40",
-                      "hover:bg-[#eaf4fa] transition-colors",
+                      idx % 2 === 0 ? "bg-white" : "bg-[#F8FAFC]/40",
+                      "hover:bg-[#F1F5F9] transition-colors",
                       onRowClick && "cursor-pointer",
                     )}
                     onClick={() => onRowClick?.(row)}
@@ -201,7 +201,7 @@ export function GenericDataTable<T>({
                         <Checkbox
                           checked={checked}
                           onCheckedChange={() => handleRowSelect(id)}
-                          className="data-[state=checked]:bg-[#3298cb] data-[state=checked]:border-[#3298cb]"
+                          className="data-[state=checked]:bg-[#38BDF8] data-[state=checked]:border-[#38BDF8]"
                         />
                       </TableCell>
                     )}

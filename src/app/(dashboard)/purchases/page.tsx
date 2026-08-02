@@ -108,8 +108,8 @@ export default function PurchasesPage() {
   };
 
   const prColumns: Column<PurchaseRequest>[] = [
-    { key: "code", header: "请购号", width: "140px", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
-    { key: "order_code", header: "关联订单", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.order_code}</Link> : "-" },
+    { key: "code", header: "请购号", width: "140px", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
+    { key: "order_code", header: "关联订单", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.order_code}</Link> : "-" },
     { key: "items_count", header: "明细", width: "60px", align: "center", render: (r) => <span className="text-xs">{(r.items || []).length}</span> },
     { key: "status", header: "状态", width: "100px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "created_at", header: "创建时间", width: "120px", render: (r) => <span className="text-xs text-gray-500">{formatDate(r.created_at)}</span> },
@@ -119,7 +119,7 @@ export default function PurchasesPage() {
           <Button size="sm" variant="default" className="h-7 bg-green-600 hover:bg-green-700 text-xs" onClick={(e) => { e.stopPropagation(); handlePRAction(r, "approve"); }}><Check className="h-3 w-3 mr-0.5" />批准</Button>
           <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handlePRAction(r, "reject"); }}><X className="h-3 w-3 mr-0.5" />拒绝</Button>
         </>}
-        {r.status === "approved" && <Button size="sm" variant="default" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handlePRAction(r, "convert"); }}>转采购订单</Button>}
+        {r.status === "approved" && <Button size="sm" variant="default" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handlePRAction(r, "convert"); }}>转采购订单</Button>}
         {r.status === "converted" && <span className="text-xs text-gray-400">已转换</span>}
         {r.status === "rejected" && <span className="text-xs text-red-500">已拒绝</span>}
       </div>
@@ -127,17 +127,17 @@ export default function PurchasesPage() {
   ];
 
   const poColumns: Column<PurchaseOrder>[] = [
-    { key: "code", header: "采购号", width: "140px", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "采购号", width: "140px", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "supplier_name", header: "供应商", render: (r) => <Link href={`/suppliers/${r.supplier_id}`} className="text-sm hover:underline">{r.supplier_name}</Link> },
     { key: "order_date", header: "下单日期", width: "110px", render: (r) => <span className="text-xs">{formatDate(r.order_date)}</span> },
     { key: "total_amount", header: "金额", width: "120px", align: "right", render: (r) => <span className="text-sm font-medium">{formatCurrency(r.total_amount, r.currency)}</span> },
     { key: "status", header: "状态", width: "110px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "actions", header: "操作", width: "180px", align: "center", render: (r) => (
       <div className="flex items-center justify-center gap-1">
-        {r.status === "pending" && <Button size="sm" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "approved"); }}>审批</Button>}
-        {r.status === "approved" && <Button size="sm" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "sent"); }}><Send className="h-3 w-3 mr-0.5" />发送</Button>}
-        {r.status === "sent" && <Button size="sm" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "arrived"); }}><Package className="h-3 w-3 mr-0.5" />到货登记</Button>}
-        {(r.status === "partial_arrived" || r.status === "arrived") && <Button size="sm" className="h-7 bg-[#3298cb] hover:bg-[#2c87b3] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "warehoused"); }}>入库</Button>}
+        {r.status === "pending" && <Button size="sm" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "approved"); }}>审批</Button>}
+        {r.status === "approved" && <Button size="sm" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "sent"); }}><Send className="h-3 w-3 mr-0.5" />发送</Button>}
+        {r.status === "sent" && <Button size="sm" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "arrived"); }}><Package className="h-3 w-3 mr-0.5" />到货登记</Button>}
+        {(r.status === "partial_arrived" || r.status === "arrived") && <Button size="sm" className="h-7 bg-[#38BDF8] hover:bg-[#0EA5E9] text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "warehoused"); }}>入库</Button>}
         {r.status === "warehoused" && <Button size="sm" className="h-7 bg-green-600 hover:bg-green-700 text-xs" onClick={(e) => { e.stopPropagation(); handlePOAction(r, "paid"); }}><DollarSign className="h-3 w-3 mr-0.5" />付款</Button>}
         {r.status === "paid" && <span className="text-xs text-gray-400">已完成</span>}
       </div>

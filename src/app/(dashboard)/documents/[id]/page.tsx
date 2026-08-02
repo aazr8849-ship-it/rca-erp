@@ -39,7 +39,7 @@ export default function DocumentDetailPage() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <InfoItem label="单证编码" value={<span className="font-mono">{doc.code}</span>} />
             <InfoItem label="单证类型" value={DOCUMENT_TYPE_LABELS[doc.document_type]} />
-            <InfoItem label="关联订单" value={doc.order_code ? <Link href={`/orders/${doc.order_id}`} className="text-[#3298cb] hover:underline">{doc.order_code}</Link> : "-"} />
+            <InfoItem label="关联订单" value={doc.order_code ? <Link href={`/orders/${doc.order_id}`} className="text-[#38BDF8] hover:underline">{doc.order_code}</Link> : "-"} />
             <InfoItem label="状态" value={<StatusBadge status={doc.status} />} />
             <InfoItem label="签发日期" value={doc.issued_date ? formatDate(doc.issued_date) : "-"} />
             <InfoItem label="创建时间" value={formatDate(doc.created_at, "YYYY-MM-DD HH:mm")} />
@@ -50,7 +50,7 @@ export default function DocumentDetailPage() {
         {order && (
           <InfoCard title="关联订单">
             <div className="space-y-2 text-sm">
-              <div><div className="text-xs text-gray-500">订单号</div><Link href={`/orders/${order.id}`} className="font-medium text-[#3298cb] hover:underline">{order.code}</Link></div>
+              <div><div className="text-xs text-gray-500">订单号</div><Link href={`/orders/${order.id}`} className="font-medium text-[#38BDF8] hover:underline">{order.code}</Link></div>
               <div><div className="text-xs text-gray-500">客户</div><div>{order.customer_name}</div></div>
               <div><div className="text-xs text-gray-500">订单金额</div><div className="font-medium">{order.currency} {order.total_amount}</div></div>
               <div><div className="text-xs text-gray-500">下单日期</div><div>{formatDate(order.order_date)}</div></div>

@@ -53,7 +53,7 @@ export default function SettingsPage() {
               <Field label="地址" full><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} /></Field>
             </div>
             <div className="mt-4 flex justify-end">
-              <Button onClick={handleSave} className="bg-[#3298cb] hover:bg-[#2c87b3]">保存设置</Button>
+              <Button onClick={handleSave} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">保存设置</Button>
             </div>
           </InfoCard>
         </TabsContent>
@@ -94,7 +94,7 @@ export default function SettingsPage() {
               <Field label="信用额度预警比例(%)"><Input type="number" defaultValue={80} /></Field>
             </div>
             <div className="mt-4 flex justify-end">
-              <Button onClick={handleSave} className="bg-[#3298cb] hover:bg-[#2c87b3]">保存规则</Button>
+              <Button onClick={handleSave} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">保存规则</Button>
             </div>
           </InfoCard>
 

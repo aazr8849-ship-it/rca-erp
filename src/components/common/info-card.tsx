@@ -28,8 +28,8 @@ export function InfoCard({
         <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
           <div className="flex items-center gap-2">
             {Icon && (
-              <div className="w-7 h-7 rounded bg-[#3298cb]/10 flex items-center justify-center">
-                <Icon className="h-4 w-4 text-[#3298cb]" />
+              <div className="w-7 h-7 rounded bg-[#38BDF8]/10 flex items-center justify-center">
+                <Icon className="h-4 w-4 text-[#38BDF8]" />
               </div>
             )}
             <div>

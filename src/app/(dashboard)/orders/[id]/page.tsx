@@ -99,14 +99,14 @@ export default function OrderDetailPage() {
   const buttons = STATUS_OPTIONS[order.status] || [];
 
   const prColumns: Column<PurchaseRequest>[] = [
-    { key: "code", header: "请购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "请购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
     { key: "items_count", header: "明细", render: (r) => <span className="text-xs">{(r.items || []).length} 项</span> },
     { key: "created_at", header: "创建时间", render: (r) => <span className="text-xs">{formatDate(r.created_at)}</span> },
   ];
 
   const poColumns: Column<PurchaseOrder>[] = [
-    { key: "code", header: "采购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "采购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "supplier_name", header: "供应商" },
     { key: "total_amount", header: "金额", align: "right", render: (r) => formatCurrency(r.total_amount, r.currency) },
     { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
@@ -142,7 +142,7 @@ export default function OrderDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {buttons.map((b) => (
-            <Button key={b.status} onClick={() => handleStatusChange(b.status)} variant={b.variant} className={b.variant === "default" ? "bg-[#3298cb] hover:bg-[#2c87b3]" : ""}>{b.label}</Button>
+            <Button key={b.status} onClick={() => handleStatusChange(b.status)} variant={b.variant} className={b.variant === "default" ? "bg-[#38BDF8] hover:bg-[#0EA5E9]" : ""}>{b.label}</Button>
           ))}
         </div>
       </div>
@@ -154,11 +154,11 @@ export default function OrderDetailPage() {
         <InfoCard title="订单信息" icon={ShoppingCart} className="lg:col-span-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <InfoItem label="订单编码" value={<span className="font-mono">{order.code}</span>} />
-            <InfoItem label="客户" value={<Link href={`/customers/${order.customer_id}`} className="text-[#3298cb] hover:underline">{order.customer_name}</Link>} />
+            <InfoItem label="客户" value={<Link href={`/customers/${order.customer_id}`} className="text-[#38BDF8] hover:underline">{order.customer_name}</Link>} />
             <InfoItem label="下单日期" value={formatDate(order.order_date)} />
             <InfoItem label="交货日期" value={formatDate(order.delivery_date)} />
             <InfoItem label="币种" value={order.currency} />
-            <InfoItem label="总金额" value={<span className="text-[#3298cb] font-medium">{formatCurrency(order.total_amount, order.currency)}</span>} />
+            <InfoItem label="总金额" value={<span className="text-[#38BDF8] font-medium">{formatCurrency(order.total_amount, order.currency)}</span>} />
             <InfoItem label="状态" value={<StatusBadge status={order.status} />} />
             <InfoItem label="贸易条款" value={order.trade_terms || "-"} />
             <InfoItem label="付款条件" value={order.payment_terms || "-"} />
@@ -170,7 +170,7 @@ export default function OrderDetailPage() {
 
         <InfoCard title="金额信息" icon={DollarSign}>
           <div className="space-y-3">
-            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">订单总金额</div><div className="text-2xl font-bold text-[#3298cb] mt-1">{formatCurrency(order.total_amount, order.currency)}</div></div>
+            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">订单总金额</div><div className="text-2xl font-bold text-[#38BDF8] mt-1">{formatCurrency(order.total_amount, order.currency)}</div></div>
             <div className="bg-orange-50 rounded-md p-3"><div className="text-xs text-gray-600">明细数量</div><div className="text-2xl font-bold text-orange-600 mt-1">{(order.items || []).length} 项</div></div>
             <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">应收账款</div><div className="text-xl font-bold text-green-600 mt-1">{relatedReceivables.length} 笔</div></div>
           </div>
@@ -201,7 +201,7 @@ export default function OrderDetailPage() {
                     <TableCell className="text-sm text-right font-medium">{formatCurrency(Number(item.quantity) * Number(item.unit_price), order.currency)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={6} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#3298cb] text-base">{formatCurrency(order.total_amount, order.currency)}</TableCell></TableRow>
+                <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={6} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#38BDF8] text-base">{formatCurrency(order.total_amount, order.currency)}</TableCell></TableRow>
               </TableBody>
             </Table>
           </InfoCard>

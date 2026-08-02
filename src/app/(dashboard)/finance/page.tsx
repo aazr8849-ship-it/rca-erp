@@ -81,7 +81,7 @@ export default function FinancePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="text-xs text-gray-600 flex items-center gap-1"><TrendingUp className="h-3 w-3" />应收总额</div>
-          <div className="text-xl font-bold text-[#3298cb] mt-1">{formatCurrency(totalRec, "CNY")}</div>
+          <div className="text-xl font-bold text-[#38BDF8] mt-1">{formatCurrency(totalRec, "CNY")}</div>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
           <div className="text-xs text-gray-600 flex items-center gap-1"><TrendingUp className="h-3 w-3" />已收金额</div>

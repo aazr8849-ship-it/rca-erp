@@ -30,8 +30,8 @@ export default function ShipmentsPage() {
   }, [shipments, search, statusFilter, methodFilter]);
 
   const columns: Column<Shipment>[] = [
-    { key: "code", header: "发货号", width: "140px", render: (r) => <Link href={`/shipments/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
-    { key: "order_code", header: "订单号", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.order_code}</Link> : "-" },
+    { key: "code", header: "发货号", width: "140px", render: (r) => <Link href={`/shipments/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
+    { key: "order_code", header: "订单号", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.order_code}</Link> : "-" },
     { key: "customer_name", header: "客户" },
     { key: "shipment_date", header: "发货日期", width: "110px", render: (r) => <span className="text-xs">{formatDate(r.shipment_date)}</span> },
     { key: "shipping_method", header: "运输方式", width: "100px", render: (r) => <span className="text-xs">{SHIPPING_METHOD_LABELS[r.shipping_method]}</span> },

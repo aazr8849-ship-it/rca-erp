@@ -439,6 +439,8 @@ export interface Notification {
   content: string;
   is_read: boolean;
   created_at: ISODate;
+  link?: string;  // 跳转路径，如 /finance?status=overdue
+  category?: "receivable" | "payable" | "inquiry" | "quotation" | "order" | "purchase" | "shipment" | "system";
 }
 
 // Dashboard 数据

@@ -97,7 +97,7 @@ export default function QuotationDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {buttons.map((b) => (
-            <Button key={b.label} onClick={() => { setConfirmAction(actionMap[b.label]); setConfirmOpen(true); }} variant={b.variant} className={b.variant === "default" ? "bg-[#3298cb] hover:bg-[#2c87b3]" : ""}>{b.label}</Button>
+            <Button key={b.label} onClick={() => { setConfirmAction(actionMap[b.label]); setConfirmOpen(true); }} variant={b.variant} className={b.variant === "default" ? "bg-[#38BDF8] hover:bg-[#0EA5E9]" : ""}>{b.label}</Button>
           ))}
           {relatedOrder && <Link href={`/orders/${relatedOrder.id}`}><Button variant="outline">查看关联订单</Button></Link>}
         </div>
@@ -107,11 +107,11 @@ export default function QuotationDetailPage() {
         <InfoCard title="报价信息" icon={FileText} className="lg:col-span-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <InfoItem label="报价编码" value={<span className="font-mono">{quotation.code}</span>} />
-            <InfoItem label="客户" value={<Link href={`/customers/${quotation.customer_id}`} className="text-[#3298cb] hover:underline">{quotation.customer_name}</Link>} />
+            <InfoItem label="客户" value={<Link href={`/customers/${quotation.customer_id}`} className="text-[#38BDF8] hover:underline">{quotation.customer_name}</Link>} />
             <InfoItem label="状态" value={<StatusBadge status={quotation.status} />} />
             <InfoItem label="定价状态" value={<StatusBadge status={quotation.pricing_status} />} />
             <InfoItem label="币种" value={quotation.currency} />
-            <InfoItem label="总金额" value={<span className="text-[#3298cb] font-medium">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</span>} />
+            <InfoItem label="总金额" value={<span className="text-[#38BDF8] font-medium">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</span>} />
             <InfoItem label="有效期至" value={formatDate(quotation.valid_until)} />
             <InfoItem label="贸易条款" value={quotation.trade_terms || "-"} />
             <InfoItem label="付款条件" value={quotation.payment_terms || "-"} />
@@ -121,7 +121,7 @@ export default function QuotationDetailPage() {
 
         <InfoCard title="金额信息" icon={DollarSign}>
           <div className="space-y-3">
-            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">报价总金额</div><div className="text-2xl font-bold text-[#3298cb] mt-1">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</div></div>
+            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">报价总金额</div><div className="text-2xl font-bold text-[#38BDF8] mt-1">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</div></div>
             <div className="bg-purple-50 rounded-md p-3"><div className="text-xs text-gray-600">明细数量</div><div className="text-2xl font-bold text-purple-600 mt-1">{(quotation.items || []).length} 项</div></div>
             {relatedOrder && <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">关联订单</div><Link href={`/orders/${relatedOrder.id}`} className="text-sm font-medium text-green-600 mt-1 block hover:underline">{relatedOrder.code}</Link></div>}
           </div>
@@ -143,7 +143,7 @@ export default function QuotationDetailPage() {
                 <TableCell className="text-sm text-right font-medium">{item.unit_price ? formatCurrency(Number(item.quantity) * Number(item.unit_price), quotation.currency) : "-"}</TableCell>
               </TableRow>
             ))}
-            <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={6} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#3298cb] text-base">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</TableCell></TableRow>
+            <TableRow className="bg-gray-50 font-medium"><TableCell colSpan={6} className="text-right text-sm">合计：</TableCell><TableCell className="text-right text-[#38BDF8] text-base">{formatCurrency(quotation.total_amount || totalAmount, quotation.currency)}</TableCell></TableRow>
           </TableBody>
         </Table>
       </InfoCard>

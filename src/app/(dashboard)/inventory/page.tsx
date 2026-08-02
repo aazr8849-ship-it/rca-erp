@@ -117,7 +117,7 @@ export default function InventoryPage() {
             </div>
             <div className="space-y-1.5"><Label className="text-xs">{operation === "freeze" ? "冻结数量" : "解冻数量"}</Label><Input type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} min={0} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setFreezeTarget(null)}>取消</Button><Button onClick={handleFreezeSubmit} className="bg-[#3298cb] hover:bg-[#2c87b3]">确认</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setFreezeTarget(null)}>取消</Button><Button onClick={handleFreezeSubmit} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">确认</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -133,7 +133,7 @@ export default function InventoryPage() {
             <div className="space-y-1.5"><Label className="text-xs">实际数量</Label><Input type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} min={0} /></div>
             <div className="space-y-1.5"><Label className="text-xs">调整原因</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="如：定期盘点、损坏报损等" /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setAdjustTarget(null)}>取消</Button><Button onClick={handleAdjustSubmit} className="bg-[#3298cb] hover:bg-[#2c87b3]">确认调整</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setAdjustTarget(null)}>取消</Button><Button onClick={handleAdjustSubmit} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">确认调整</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

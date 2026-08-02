@@ -32,11 +32,11 @@ export default function QuotationsPage() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns: Column<Quotation>[] = [
-    { key: "code", header: "报价号", width: "140px", render: (r) => <Link href={`/quotations/${r.id}`} className="text-xs font-mono text-[#3298cb] hover:underline">{r.code}</Link> },
+    { key: "code", header: "报价号", width: "140px", render: (r) => <Link href={`/quotations/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
     { key: "customer_name", header: "客户", render: (r) => <Link href={`/customers/${r.customer_id}`} className="text-sm hover:underline">{r.customer_name}</Link> },
     { key: "pricing_status", header: "定价状态", width: "100px", render: (r) => <StatusBadge status={r.pricing_status} /> },
     { key: "status", header: "状态", width: "100px", render: (r) => <StatusBadge status={r.status} /> },
-    { key: "total_amount", header: "金额", width: "120px", align: "right", render: (r) => <span className="text-sm font-medium text-[#3298cb]">{formatCurrency(r.total_amount, r.currency)}</span> },
+    { key: "total_amount", header: "金额", width: "120px", align: "right", render: (r) => <span className="text-sm font-medium text-[#38BDF8]">{formatCurrency(r.total_amount, r.currency)}</span> },
     { key: "currency", header: "币种", width: "60px" },
     { key: "valid_until", header: "有效期至", width: "120px", render: (r) => { const expiring = new Date(r.valid_until).getTime() - Date.now() < 7 * 86400000; const expired = new Date(r.valid_until).getTime() < Date.now(); return <span className={`text-xs ${expired ? "text-red-500" : expiring ? "text-orange-500" : "text-gray-500"}`}>{formatDate(r.valid_until)}</span>; } },
     { key: "created_at", header: "创建时间", width: "120px", render: (r) => <span className="text-xs text-gray-500">{formatDate(r.created_at)}</span> },
