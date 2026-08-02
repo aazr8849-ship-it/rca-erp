@@ -1,0 +1,621 @@
+     1→     1→// ============================================================
+     2→     2→// Mock 数据存储 - 使用 zustand 管理内存数据，localStorage 持久化
+     3→     3→// ============================================================
+     4→     4→import { create } from "zustand";
+     5→     5→import { persist, createJSONStorage } from "zustand/middleware";
+     6→     6→import { v4 as uuidv4 } from "uuid";
+     7→     7→import type {
+     8→     8→  Customer,
+     9→     9→  Supplier,
+    10→    10→  Product,
+    11→    11→  ProductCategory,
+    12→    12→  Inquiry,
+    13→    13→  Quotation,
+    14→    14→  Order,
+    15→    15→  PurchaseRequest,
+    16→    16→  PurchaseOrder,
+    17→    17→  Warehouse,
+    18→    18→  Inventory,
+    19→    19→  StockMovement,
+    20→    20→  Shipment,
+    21→    21→  Receivable,
+    22→    22→  Payable,
+    23→    23→  Document,
+    24→    24→  AuditLog,
+    25→    25→  SystemSettings,
+    26→    26→  ExchangeRate,
+    27→    27→  Notification,
+    28→    28→  User,
+    29→    29→} from "./types";
+    30→    30→import { uuid } from "./utils";
+    31→    31→
+    32→    32→// 当前日期工具
+    33→    33→const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString();
+    34→    34→const daysLater = (days: number) => new Date(Date.now() + days * 86400000).toISOString();
+    35→    35→const today = () => new Date().toISOString();
+    36→    36→
+    37→    37→// 种子数据生成
+    38→    38→const seedUsers: User[] = [
+    39→    39→  { id: "u-admin", email: "admin@rca-erp.com", name: "管理员", role: "admin", status: "active", created_at: daysAgo(180) },
+    40→    40→  { id: "u-sales", email: "sales@rca-erp.com", name: "李销售", role: "sales", status: "active", created_at: daysAgo(120) },
+    41→    41→  { id: "u-purchaser", email: "purchaser@rca-erp.com", name: "王采购", role: "purchaser", status: "active", created_at: daysAgo(100) },
+    42→    42→  { id: "u-warehouse", email: "warehouse@rca-erp.com", name: "张仓管", role: "warehouse", status: "active", created_at: daysAgo(80) },
+    43→    43→  { id: "u-finance", email: "finance@rca-erp.com", name: "赵财务", role: "finance", status: "active", created_at: daysAgo(60) },
+    44→    44→];
+    45→    45→
+    46→    46→const seedCategories: ProductCategory[] = [
+    47→    47→  { id: "cat-1", code: "CAT001", name: "制动系统", parent_id: null, sort_order: 1 },
+    48→    48→  { id: "cat-2", code: "CAT002", name: "发动机配件", parent_id: null, sort_order: 2 },
+    49→    49→  { id: "cat-3", code: "CAT003", name: "密封件", parent_id: null, sort_order: 3 },
+    50→    50→  { id: "cat-4", code: "CAT004", name: "轴承", parent_id: null, sort_order: 4 },
+    51→    51→  { id: "cat-5", code: "CAT005", name: "电气系统", parent_id: null, sort_order: 5 },
+    52→    52→  { id: "cat-1-1", code: "CAT001-1", name: "刹车片", parent_id: "cat-1", sort_order: 1 },
+    53→    53→  { id: "cat-1-2", code: "CAT001-2", name: "刹车盘", parent_id: "cat-1", sort_order: 2 },
+    54→    54→];
+    55→    55→
+    56→    56→const seedProducts: Product[] = [
+    57→    57→  {
+    58→    58→    id: "p-001", code: "PD001", name: "前制动片", name_en: "Front Brake Pad", oem_number: "OEM-TOYOTA-001",
+    59→    59→    category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
+    60→    60→    image_urls: [], cost_price: 35.00, sale_price: 58.00, unit: "套", weight_kg: 1.2,
+    61→    61→    status: "active", applicable_models: ["Toyota Camry", "Toyota Corolla"],
+    62→    62→    description: "适用于丰田卡罗拉/凯美瑞的前制动片", created_at: daysAgo(90), updated_at: daysAgo(10),
+    63→    63→  },
+    64→    64→  {
+    65→    65→    id: "p-002", code: "PD002", name: "后制动片", name_en: "Rear Brake Pad", oem_number: "OEM-TOYOTA-002",
+    66→    66→    category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
+    67→    67→    image_urls: [], cost_price: 32.00, sale_price: 52.00, unit: "套", weight_kg: 1.0,
+    68→    68→    status: "active", applicable_models: ["Toyota Camry"], created_at: daysAgo(85), updated_at: daysAgo(8),
+    69→    69→  },
+    70→    70→  {
+    71→    71→    id: "p-003", code: "PD003", name: "机油滤芯", name_en: "Oil Filter", oem_number: "OEM-HONDA-003",
+    72→    72→    category_id: "cat-2", category_name: "发动机配件", brand: "Mann",
+    73→    73→    image_urls: [], cost_price: 12.00, sale_price: 22.00, unit: "个", weight_kg: 0.3,
+    74→    74→    status: "active", applicable_models: ["Honda Civic", "Honda Accord"],
+    75→    75→    created_at: daysAgo(80), updated_at: daysAgo(5),
+    76→    76→  },
+    77→    77→  {
+    78→    78→    id: "p-004", code: "PD004", name: "气门室垫片", name_en: "Valve Cover Gasket", oem_number: "OEM-VW-004",
+    79→    79→    category_id: "cat-3", category_name: "密封件", brand: "Elring",
+    80→    80→    image_urls: [], cost_price: 18.00, sale_price: 35.00, unit: "个", weight_kg: 0.2,
+    81→    81→    status: "active", applicable_models: ["VW Golf", "Audi A4"],
+    82→    82→    created_at: daysAgo(75), updated_at: daysAgo(12),
+    83→    83→  },
+    84→    84→  {
+    85→    85→    id: "p-005", code: "PD005", name: "深沟球轴承6203", name_en: "Deep Groove Ball Bearing 6203",
+    86→    86→    oem_number: "OEM-SKF-005", category_id: "cat-4", category_name: "轴承", brand: "SKF",
+    87→    87→    image_urls: [], cost_price: 8.00, sale_price: 16.00, unit: "个", weight_kg: 0.15,
+    88→    88→    status: "active", applicable_models: ["Universal"], created_at: daysAgo(70), updated_at: daysAgo(15),
+    89→    89→  },
+    90→    90→  {
+    91→    91→    id: "p-006", code: "PD006", name: "发电机", name_en: "Alternator", oem_number: "OEM-BOSCH-006",
+    92→    92→    category_id: "cat-5", category_name: "电气系统", brand: "Bosch",
+    93→    93→    image_urls: [], cost_price: 120.00, sale_price: 195.00, unit: "台", weight_kg: 5.5,
+    94→    94→    status: "active", applicable_models: ["BMW 3 Series", "BMW 5 Series"],
+    95→    95→    created_at: daysAgo(65), updated_at: daysAgo(20),
+    96→    96→  },
+    97→    97→  {
+    98→    98→    id: "p-007", code: "PD007", name: "刹车盘", name_en: "Brake Disc", oem_number: "OEM-BREMBO-007",
+    99→    99→    category_id: "cat-1-2", category_name: "刹车盘", brand: "Brembo",
+   100→   100→    image_urls: [], cost_price: 45.00, sale_price: 78.00, unit: "个", weight_kg: 4.5,
+   101→   101→    status: "active", applicable_models: ["Mercedes C-Class"],
+   102→   102→    created_at: daysAgo(60), updated_at: daysAgo(18),
+   103→   103→  },
+   104→   104→  {
+   105→   105→    id: "p-008", code: "PD008", name: "空气滤芯", name_en: "Air Filter", oem_number: "OEM-MANN-008",
+   106→   106→    category_id: "cat-2", category_name: "发动机配件", brand: "Mann",
+   107→   107→    image_urls: [], cost_price: 10.00, sale_price: 19.00, unit: "个", weight_kg: 0.25,
+   108→   108→    status: "active", applicable_models: ["VW Passat", "Audi A6"],
+   109→   109→    created_at: daysAgo(55), updated_at: daysAgo(7),
+   110→   110→  },
+   111→   111→  {
+   112→   112→    id: "p-009", code: "PD009", name: "火花塞", name_en: "Spark Plug", oem_number: "OEM-NGK-009",
+   113→   113→    category_id: "cat-2", category_name: "发动机配件", brand: "NGK",
+   114→   114→    image_urls: [], cost_price: 6.00, sale_price: 12.00, unit: "个", weight_kg: 0.05,
+   115→   115→    status: "active", applicable_models: ["Universal"],
+   116→   116→    created_at: daysAgo(50), updated_at: daysAgo(3),
+   117→   117→  },
+   118→   118→  {
+   119→   119→    id: "p-010", code: "PD010", name: "起动机", name_en: "Starter Motor", oem_number: "OEM-VALEO-010",
+   120→   120→    category_id: "cat-5", category_name: "电气系统", brand: "Valeo",
+   121→   121→    image_urls: [], cost_price: 95.00, sale_price: 165.00, unit: "台", weight_kg: 4.2,
+   122→   122→    status: "active", applicable_models: ["Peugeot 308", "Citroen C4"],
+   123→   123→    created_at: daysAgo(45), updated_at: daysAgo(25),
+   124→   124→  },
+   125→   125→];
+   126→   126→
+   127→   127→const seedCustomers: Customer[] = [
+   128→   128→  {
+   129→   129→    id: "c-001", code: "CU001", name: "上海汽车配件有限公司", name_en: "Shanghai Auto Parts Co., Ltd",
+   130→   130→    contact_person: "张经理", contact_email: "zhang@shauto.com", contact_phone: "13800138001",
+   131→   131→    country: "中国", address: "上海市浦东新区张江高科技园区", website: "www.shauto.com",
+   132→   132→    level: "strategic", status: "active", credit_limit: 500000, payment_terms: "T/T 30天",
+   133→   133→    preferred_currency: "CNY", notes: "战略客户，年采购额超500万",
+   134→   134→    created_at: daysAgo(120), updated_at: daysAgo(5),
+   135→   135→  },
+   136→   136→  {
+   137→   137→    id: "c-002", code: "CU002", name: "AutoZone USA Inc.", name_en: "AutoZone USA Inc.",
+   138→   138→    contact_person: "John Smith", contact_email: "john@autozone.com", contact_phone: "+1-555-0102",
+   139→   139→    country: "美国", address: "1234 Memphis, Tennessee, USA", website: "www.autozone.com",
+   140→   140→    level: "vip", status: "active", credit_limit: 200000, payment_terms: "T/T 60天",
+   141→   141→    preferred_currency: "USD", notes: "美国最大汽配零售商之一",
+   142→   142→    created_at: daysAgo(100), updated_at: daysAgo(10),
+   143→   143→  },
+   144→   144→  {
+   145→   145→    id: "c-003", code: "CU003", name: "Bosch Germany GmbH", name_en: "Bosch Germany GmbH",
+   146→   146→    contact_person: "Hans Mueller", contact_email: "hans@bosch.de", contact_phone: "+49-30-1234",
+   147→   147→    country: "德国", address: "Gerlingen, Stuttgart, Germany", website: "www.bosch.de",
+   148→   148→    level: "strategic", status: "active", credit_limit: 800000, payment_terms: "L/C 90天",
+   149→   149→    preferred_currency: "EUR", notes: "德国博世总部直供",
+   150→   150→    created_at: daysAgo(80), updated_at: daysAgo(15),
+   151→   151→  },
+   152→   152→  {
+   153→   153→    id: "c-004", code: "CU004", name: "Toyota Japan Co.", name_en: "Toyota Japan Co.",
+   154→   154→    contact_person: "Tanaka-san", contact_email: "tanaka@toyota.jp", contact_phone: "+81-3-1234",
+   155→   155→    country: "日本", address: "Toyota City, Aichi, Japan", website: "www.toyota.jp",
+   156→   156→    level: "vip", status: "active", credit_limit: 600000, payment_terms: "T/T 45天",
+   157→   157→    preferred_currency: "USD", notes: "丰田汽车总部",
+   158→   158→    created_at: daysAgo(60), updated_at: daysAgo(20),
+   159→   159→  },
+   160→   160→  {
+   161→   161→    id: "c-005", code: "CU005", name: "Al Futtaim Motors UAE", name_en: "Al Futtaim Motors UAE",
+   162→   162→    contact_person: "Ahmed Ali", contact_email: "ahmed@alfuttaim.ae", contact_phone: "+971-4-1234",
+   163→   163→    country: "阿联酋", address: "Dubai, UAE", website: "www.alfuttaim.ae",
+   164→   164→    level: "normal", status: "active", credit_limit: 150000, payment_terms: "T/T 30天",
+   165→   165→    preferred_currency: "USD", notes: "中东区域合作伙伴",
+   166→   166→    created_at: daysAgo(40), updated_at: daysAgo(2),
+   167→   167→  },
+   168→   168→  {
+   169→   169→    id: "c-006", code: "CU006", name: "北京现代汽配", name_en: "Beijing Hyundai Parts",
+   170→   170→    contact_person: "刘总", contact_email: "liu@bjhyundai.com", contact_phone: "13900139001",
+   171→   171→    country: "中国", address: "北京市朝阳区建国路", website: "www.bjhyundai.com",
+   172→   172→    level: "normal", status: "silent", credit_limit: 80000, payment_terms: "T/T 30天",
+   173→   173→    preferred_currency: "CNY", notes: "近半年无采购",
+   174→   174→    created_at: daysAgo(150), updated_at: daysAgo(90),
+   175→   175→  },
+   176→   176→];
+   177→   177→
+   178→   178→const seedSuppliers: Supplier[] = [
+   179→   179→  {
+   180→   180→    id: "s-001", code: "SU001", name: "宁波华翔汽配厂", name_en: "Ningbo Huaxiang Auto Parts",
+   181→   181→    contact_person: "王厂长", contact_email: "wang@huaxiang.com", contact_phone: "13700137001",
+   182→   182→    country: "中国", address: "浙江省宁波市鄞州区", level: "preferred", status: "active",
+   183→   183→    main_category: ["制动系统", "刹车片"], lead_time_days: 15, quality_rating: 5,
+   184→   184→    payment_terms: "T/T 30天", notes: "制动片主力供应商",
+   185→   185→    created_at: daysAgo(120), updated_at: daysAgo(8),
+   186→   186→  },
+   187→   187→  {
+   188→   188→    id: "s-002", code: "SU002", name: "温州东方轴承厂", name_en: "Wenzhou Dongfang Bearing",
+   189→   189→    contact_person: "李经理", contact_email: "li@dongfang.com", contact_phone: "13700137002",
+   190→   190→    country: "中国", address: "浙江省温州市瓯海区", level: "normal", status: "active",
+   191→   191→    main_category: ["轴承"], lead_time_days: 20, quality_rating: 4,
+   192→   192→    payment_terms: "T/T 30天", notes: "轴承类产品供应商",
+   193→   193→    created_at: daysAgo(100), updated_at: daysAgo(12),
+   194→   194→  },
+   195→   195→  {
+   196→   196→    id: "s-003", code: "SU003", name: "广州鸿图密封件", name_en: "Guangzhou Hongtu Seals",
+   197→   197→    contact_person: "陈总", contact_email: "chen@hongtu.com", contact_phone: "13700137003",
+   198→   198→    country: "中国", address: "广东省广州市黄埔区", level: "strategic", status: "active",
+   199→   199→    main_category: ["密封件", "发动机配件"], lead_time_days: 10, quality_rating: 5,
+   200→   200→    payment_terms: "T/T 45天", notes: "密封件战略供应商",
+   201→   201→    created_at: daysAgo(80), updated_at: daysAgo(5),
+   202→   202→  },
+   203→   203→];
+   204→   204→
+   205→   205→const seedWarehouses: Warehouse[] = [
+   206→   206→  { id: "wh-001", code: "WH001", name: "主仓库", address: "上海市浦东新区主仓库" },
+   207→   207→  { id: "wh-002", code: "WH002", name: "华东分仓", address: "杭州市余杭区分仓" },
+   208→   208→];
+   209→   209→
+   210→   210→const seedInventory: Inventory[] = seedProducts.map((p, i) => ({
+   211→   211→  id: `inv-${i + 1}`,
+   212→   212→  product_id: p.id,
+   213→   213→  product_name: p.name,
+   214→   214→  product_code: p.code,
+   215→   215→  warehouse_id: "wh-001",
+   216→   216→  warehouse_name: "主仓库",
+   217→   217→  quantity: 100 + Math.floor(Math.random() * 400),
+   218→   218→  frozen_quantity: Math.floor(Math.random() * 50),
+   219→   219→  available_quantity: 0, // computed
+   220→   220→  updated_at: daysAgo(Math.floor(Math.random() * 30)),
+   221→   221→})).map(inv => ({ ...inv, available_quantity: inv.quantity - inv.frozen_quantity }));
+   222→   222→
+   223→   223→const seedInquiries: Inquiry[] = [
+   224→   224→  {
+   225→   225→    id: "inq-001", code: "IN-2026-0001", customer_id: "c-002", customer_name: "AutoZone USA Inc.",
+   226→   226→    customer_country: "美国", subject: "前制动片紧急询价", source: "email", priority: "high",
+   227→   227→    status: "quoted", notes: "客户希望尽快报价，预计每月500套需求",
+   228→   228→    items: [
+   229→   229→      { id: "ii-1", inquiry_id: "inq-001", product_id: "p-001", product_name: "前制动片", oem_number: "OEM-TOYOTA-001", quantity: 500, unit: "套", target_price: 55 },
+   230→   230→    ],
+   231→   231→    created_at: daysAgo(25), updated_at: daysAgo(20),
+   232→   232→  },
+   233→   233→  {
+   234→   234→    id: "inq-002", code: "IN-2026-0002", customer_id: "c-003", customer_name: "Bosch Germany GmbH",
+   235→   235→    customer_country: "德国", subject: "Bosch OEM火花塞询价", source: "email", priority: "medium",
+   236→   236→    status: "processing", notes: "年度采购合同",
+   237→   237→    items: [
+   238→   238→      { id: "ii-2", inquiry_id: "inq-002", product_id: "p-009", product_name: "火花塞", oem_number: "OEM-NGK-009", quantity: 2000, unit: "个", target_price: 10 },
+   239→   239→    ],
+   240→   240→    created_at: daysAgo(15), updated_at: daysAgo(5),
+   241→   241→  },
+   242→   242→  {
+   243→   243→    id: "inq-003", code: "IN-2026-0003", customer_id: "c-004", customer_name: "Toyota Japan Co.",
+   244→   244→    customer_country: "日本", subject: "丰田卡罗拉刹车系统询价", source: "wechat", priority: "high",
+   245→   245→    status: "pending", notes: "新项目需求",
+   246→   246→    items: [
+   247→   247→      { id: "ii-3", inquiry_id: "inq-003", product_id: "p-001", product_name: "前制动片", quantity: 300, unit: "套", target_price: 50 },
+   248→   248→      { id: "ii-4", inquiry_id: "inq-003", product_id: "p-002", product_name: "后制动片", quantity: 300, unit: "套", target_price: 45 },
+   249→   249→    ],
+   250→   250→    created_at: daysAgo(5), updated_at: daysAgo(2),
+   251→   251→  },
+   252→   252→  {
+   253→   253→    id: "inq-004", code: "IN-2026-0004", customer_id: "c-005", customer_name: "Al Futtaim Motors UAE",
+   254→   254→    customer_country: "阿联酋", subject: "中东市场发动机配件询价", source: "exhibition", priority: "medium",
+   255→   255→    status: "pending", notes: "迪拜汽配展获取",
+   256→   256→    items: [
+   257→   257→      { id: "ii-5", inquiry_id: "inq-004", product_id: "p-003", product_name: "机油滤芯", quantity: 1000, unit: "个", target_price: 18 },
+   258→   258→    ],
+   259→   259→    created_at: daysAgo(3), updated_at: daysAgo(1),
+   260→   260→  },
+   261→   261→  {
+   262→   262→    id: "inq-005", code: "IN-2026-0005", customer_id: "c-001", customer_name: "上海汽车配件有限公司",
+   263→   263→    customer_country: "中国", subject: "国内采购深沟球轴承", source: "phone", priority: "low",
+   264→   264→    status: "closed", notes: "已成交",
+   265→   265→    items: [
+   266→   266→      { id: "ii-6", inquiry_id: "inq-005", product_id: "p-005", product_name: "深沟球轴承6203", quantity: 500, unit: "个", target_price: 14 },
+   267→   267→    ],
+   268→   268→    created_at: daysAgo(60), updated_at: daysAgo(50),
+   269→   269→  },
+   270→   270→];
+   271→   271→
+   272→   272→const seedQuotations: Quotation[] = [
+   273→   273→  {
+   274→   274→    id: "q-001", code: "QT-2026-0001", customer_id: "c-002", customer_name: "AutoZone USA Inc.",
+   275→   275→    inquiry_id: "inq-001", pricing_status: "priced", status: "sent",
+   276→   276→    total_amount: 29000, currency: "USD", valid_until: daysLater(15),
+   277→   277→    trade_terms: "FOB", payment_terms: "T/T 30天",
+   278→   278→    items: [
+   279→   279→      { id: "qi-1", quotation_id: "q-001", product_id: "p-001", product_name: "前制动片", oem_number: "OEM-TOYOTA-001", quantity: 500, unit: "套", unit_price: 58, total_price: 29000 },
+   280→   280→    ],
+   281→   281→    created_at: daysAgo(22), updated_at: daysAgo(18),
+   282→   282→  },
+   283→   283→  {
+   284→   284→    id: "q-002", code: "QT-2026-0002", customer_id: "c-003", customer_name: "Bosch Germany GmbH",
+   285→   285→    inquiry_id: "inq-002", pricing_status: "priced", status: "accepted",
+   286→   286→    total_amount: 22000, currency: "EUR", valid_until: daysLater(5),
+   287→   287→    trade_terms: "CIF", payment_terms: "L/C 90天",
+   288→   288→    items: [
+   289→   289→      { id: "qi-2", quotation_id: "q-002", product_id: "p-009", product_name: "火花塞", oem_number: "OEM-NGK-009", quantity: 2000, unit: "个", unit_price: 11, total_price: 22000 },
+   290→   290→    ],
+   291→   291→    created_at: daysAgo(14), updated_at: daysAgo(7),
+   292→   292→  },
+   293→   293→  {
+   294→   294→    id: "q-003", code: "QT-2026-0003", customer_id: "c-004", customer_name: "Toyota Japan Co.",
+   295→   295→    inquiry_id: "inq-003", pricing_status: "pending", status: "draft",
+   296→   296→    total_amount: 0, currency: "USD", valid_until: daysLater(30),
+   297→   297→    trade_terms: "FOB", payment_terms: "T/T 45天",
+   298→   298→    items: [
+   299→   299→      { id: "qi-3", quotation_id: "q-003", product_id: "p-001", product_name: "前制动片", quantity: 300, unit: "套", unit_price: 0, total_price: 0 },
+   300→   300→      { id: "qi-4", quotation_id: "q-003", product_id: "p-002", product_name: "后制动片", quantity: 300, unit: "套", unit_price: 0, total_price: 0 },
+   301→   301→    ],
+   302→   302→    created_at: daysAgo(3), updated_at: daysAgo(1),
+   303→   303→  },
+   304→   304→];
+   305→   305→
+   306→   306→const seedOrders: Order[] = [
+   307→   307→  {
+   308→   308→    id: "o-001", code: "OD-2026-0001", customer_id: "c-003", customer_name: "Bosch Germany GmbH",
+   309→   309→    quotation_id: "q-002", order_date: daysAgo(7), delivery_date: daysLater(53),
+   310→   310→    currency: "EUR", total_amount: 22000, status: "confirmed",
+   311→   311→    trade_terms: "CIF", payment_terms: "L/C 90天",
+   312→   312→    items: [
+   313→   313→      { id: "oi-1", order_id: "o-001", product_id: "p-009", product_name: "火花塞", oem_number: "OEM-NGK-009", quantity: 2000, shipped_quantity: 0, unit: "个", unit_price: 11 },
+   314→   314→    ],
+   315→   315→    confirmed_at: daysAgo(5), created_at: daysAgo(7), updated_at: daysAgo(5),
+   316→   316→  },
+   317→   317→  {
+   318→   318→    id: "o-002", code: "OD-2026-0002", customer_id: "c-001", customer_name: "上海汽车配件有限公司",
+   319→   319→    order_date: daysAgo(50), delivery_date: daysAgo(10),
+   320→   320→    currency: "CNY", total_amount: 7000, status: "completed",
+   321→   321→    trade_terms: "EXW", payment_terms: "T/T 30天",
+   322→   322→    items: [
+   323→   323→      { id: "oi-2", order_id: "o-002", product_id: "p-005", product_name: "深沟球轴承6203", oem_number: "OEM-SKF-005", quantity: 500, shipped_quantity: 500, unit: "个", unit_price: 14 },
+   324→   324→    ],
+   325→   325→    confirmed_at: daysAgo(48), shipped_at: daysAgo(15), completed_at: daysAgo(5),
+   326→   326→    created_at: daysAgo(50), updated_at: daysAgo(5),
+   327→   327→  },
+   328→   328→  {
+   329→   329→    id: "o-003", code: "OD-2026-0003", customer_id: "c-002", customer_name: "AutoZone USA Inc.",
+   330→   330→    order_date: daysAgo(2), delivery_date: daysLater(58),
+   331→   331→    currency: "USD", total_amount: 29000, status: "pending",
+   332→   332→    trade_terms: "FOB", payment_terms: "T/T 30天",
+   333→   333→    items: [
+   334→   334→      { id: "oi-3", order_id: "o-003", product_id: "p-001", product_name: "前制动片", oem_number: "OEM-TOYOTA-001", quantity: 500, shipped_quantity: 0, unit: "套", unit_price: 58 },
+   335→   335→    ],
+   336→   336→    created_at: daysAgo(2), updated_at: daysAgo(2),
+   337→   337→  },
+   338→   338→];
+   339→   339→
+   340→   340→const seedPurchaseRequests: PurchaseRequest[] = [
+   341→   341→  {
+   342→   342→    id: "pr-001", code: "PR-2026-0001", order_id: "o-001", order_code: "OD-2026-0001",
+   343→   343→    status: "approved",
+   344→   344→    items: [
+   345→   345→      { id: "pri-1", product_id: "p-009", product_name: "火花塞", quantity: 2000, unit: "个" },
+   346→   346→    ],
+   347→   347→    created_at: daysAgo(6), updated_at: daysAgo(5),
+   348→   348→  },
+   349→   349→  {
+   350→   350→    id: "pr-002", code: "PR-2026-0002", order_id: "o-003", order_code: "OD-2026-0003",
+   351→   351→    status: "pending",
+   352→   352→    items: [
+   353→   353→      { id: "pri-2", product_id: "p-001", product_name: "前制动片", quantity: 500, unit: "套" },
+   354→   354→    ],
+   355→   355→    created_at: daysAgo(2), updated_at: daysAgo(2),
+   356→   356→  },
+   357→   357→];
+   358→   358→
+   359→   359→const seedPurchaseOrders: PurchaseOrder[] = [
+   360→   360→  {
+   361→   361→    id: "po-001", code: "PO-2026-0001", supplier_id: "s-001", supplier_name: "宁波华翔汽配厂",
+   362→   362→    purchase_request_id: "pr-001", order_date: daysAgo(5),
+   363→   363→    currency: "CNY", total_amount: 12000, status: "sent",
+   364→   364→    trade_terms: "EXW", payment_terms: "T/T 30天",
+   365→   365→    items: [
+   366→   366→      { id: "poi-1", purchase_order_id: "po-001", product_id: "p-009", product_name: "火花塞", quantity: 2000, arrived_quantity: 0, warehoused_quantity: 0, unit: "个", unit_price: 6 },
+   367→   367→    ],
+   368→   368→    created_at: daysAgo(5), updated_at: daysAgo(3),
+   369→   369→  },
+   370→   370→];
+   371→   371→
+   372→   372→const seedShipments: Shipment[] = [
+   373→   373→  {
+   374→   374→    id: "sh-001", code: "SH-2026-0001", order_id: "o-002", order_code: "OD-2026-0002",
+   375→   375→    customer_name: "上海汽车配件有限公司",
+   376→   376→    shipment_date: daysAgo(15), shipping_method: "land",
+   377→   377→    tracking_number: "YT1234567890", container_number: "",
+   378→   378→    bl_number: "", status: "delivered",
+   379→   379→    total_weight: 75, total_cartons: 10,
+   380→   380→    items: [
+   381→   381→      { id: "shi-1", shipment_id: "sh-001", product_name: "深沟球轴承6203", quantity: 500, cartons: 10, weight_kg: 75 },
+   382→   382→    ],
+   383→   383→    created_at: daysAgo(15),
+   384→   384→  },
+   385→   385→];
+   386→   386→
+   387→   387→const seedReceivables: Receivable[] = [
+   388→   388→  {
+   389→   389→    id: "r-001", code: "FIN-2026-0001", customer_id: "c-003", customer_name: "Bosch Germany GmbH",
+   390→   390→    order_id: "o-001", order_code: "OD-2026-0001", category: "order_payment",
+   391→   391→    amount: 22000, received_amount: 0, currency: "EUR",
+   392→   392→    due_date: daysLater(83), status: "pending",
+   393→   393→    created_at: daysAgo(7),
+   394→   394→  },
+   395→   395→  {
+   396→   396→    id: "r-002", code: "FIN-2026-0002", customer_id: "c-001", customer_name: "上海汽车配件有限公司",
+   397→   397→    order_id: "o-002", order_code: "OD-2026-0002", category: "order_payment",
+   398→   398→    amount: 7000, received_amount: 0, currency: "CNY",
+   399→   399→    due_date: daysAgo(20), status: "overdue",
+   400→   400→    created_at: daysAgo(50),
+   401→   401→  },
+   402→   402→];
+   403→   403→
+   404→   404→const seedPayables: Payable[] = [
+   405→   405→  {
+   406→   406→    id: "pay-001", code: "PAY-2026-0001", supplier_id: "s-001", supplier_name: "宁波华翔汽配厂",
+   407→   407→    purchase_order_id: "po-001", category: "purchase_payment",
+   408→   408→    amount: 12000, paid_amount: 0, currency: "CNY",
+   409→   409→    due_date: daysLater(25), status: "pending",
+   410→   410→    created_at: daysAgo(5),
+   411→   411→  },
+   412→   412→];
+   413→   413→
+   414→   414→const seedDocuments: Document[] = [
+   415→   415→  {
+   416→   416→    id: "d-001", code: "DOC-2026-0001", order_id: "o-002", order_code: "OD-2026-0002",
+   417→   417→    shipment_id: "sh-001", document_type: "commercial_invoice", status: "issued",
+   418→   418→    file_url: "#", issued_date: daysAgo(15), notes: "商业发票已签发",
+   419→   419→    created_at: daysAgo(15),
+   420→   420→  },
+   421→   421→  {
+   422→   422→    id: "d-002", code: "DOC-2026-0002", order_id: "o-002", order_code: "OD-2026-0002",
+   423→   423→    shipment_id: "sh-001", document_type: "packing_list", status: "issued",
+   424→   424→    file_url: "#", issued_date: daysAgo(15), notes: "装箱单已签发",
+   425→   425→    created_at: daysAgo(15),
+   426→   426→  },
+   427→   427→  {
+   428→   428→    id: "d-003", code: "DOC-2026-0003", order_id: "o-001", order_code: "OD-2026-0001",
+   429→   429→    document_type: "commercial_invoice", status: "draft",
+   430→   430→    notes: "等待订单完成发货", created_at: daysAgo(3),
+   431→   431→  },
+   432→   432→];
+   433→   433→
+   434→   434→const seedExchangeRates: ExchangeRate[] = [
+   435→   435→  { id: "er-1", currency: "USD", rate_to_cny: 7.25, effective_date: daysAgo(1) },
+   436→   436→  { id: "er-2", currency: "EUR", rate_to_cny: 7.85, effective_date: daysAgo(1) },
+   437→   437→  { id: "er-3", currency: "GBP", rate_to_cny: 9.15, effective_date: daysAgo(1) },
+   438→   438→  { id: "er-4", currency: "JPY", rate_to_cny: 0.048, effective_date: daysAgo(1) },
+   439→   439→];
+   440→   440→
+   441→   441→const seedNotifications: Notification[] = [
+   442→   442→  { id: "n-1", type: "warning", title: "应收账款逾期", content: "FIN-2026-0002 已逾期20天，金额 ¥7,000.00", is_read: false, created_at: daysAgo(1) },
+   443→   443→  { id: "n-2", type: "info", title: "新询盘提醒", content: "IN-2026-0004 来自Al Futtaim Motors UAE", is_read: false, created_at: daysAgo(2) },
+   444→   444→  { id: "n-3", type: "success", title: "订单已完成", content: "OD-2026-0002 已完成全部流程", is_read: true, created_at: daysAgo(5) },
+   445→   445→  { id: "n-4", type: "warning", title: "报价即将过期", content: "QT-2026-0002 还剩5天到期", is_read: false, created_at: daysAgo(3) },
+   446→   446→];
+   447→   447→
+   448→   448→const seedSystemSettings: SystemSettings = {
+   449→   449→  company_name: "RCA汽配贸易有限公司",
+   450→   450→  company_name_en: "RCA Auto Parts Trading Co., Ltd",
+   451→   451→  address: "上海市浦东新区张江高科技园区",
+   452→   452→  email: "info@rca-auto.com",
+   453→   453→  phone: "+86-21-1234-5678",
+   454→   454→  default_currency: "USD",
+   455→   455→  default_trade_terms: "FOB",
+   456→   456→  default_payment_terms: "T/T",
+   457→   457→};
+   458→   458→
+   459→   459→const seedAuditLogs: AuditLog[] = [
+   460→   460→  {
+   461→   461→    id: "al-1", user_id: "u-admin", user_name: "管理员", module: "orders", action: "status_change",
+   462→   462→    record_id: "o-001", record_code: "OD-2026-0001",
+   463→   463→    before_data: { status: "pending" }, after_data: { status: "confirmed" },
+   464→   464→    description: "订单状态变更：pending → confirmed", created_at: daysAgo(5),
+   465→   465→  },
+   466→   466→  {
+   467→   467→    id: "al-2", user_id: "u-admin", user_name: "管理员", module: "customers", action: "create",
+   468→   468→    record_id: "c-005", record_code: "CU005",
+   469→   469→    after_data: { name: "Al Futtaim Motors UAE", country: "阿联酋" },
+   470→   470→    description: "创建客户 Al Futtaim Motors UAE (CU005)", created_at: daysAgo(40),
+   471→   471→  },
+   472→   472→  {
+   473→   473→    id: "al-3", user_id: "u-sales", user_name: "李销售", module: "quotations", action: "status_change",
+   474→   474→    record_id: "q-002", record_code: "QT-2026-0002",
+   475→   475→    before_data: { status: "sent" }, after_data: { status: "accepted" },
+   476→   476→    description: "报价单状态变更：sent → accepted", created_at: daysAgo(7),
+   477→   477→  },
+   478→   478→  {
+   479→   479→    id: "al-4", user_id: "u-purchaser", user_name: "王采购", module: "purchase_orders", action: "create",
+   480→   480→    record_id: "po-001", record_code: "PO-2026-0001",
+   481→   481→    after_data: { supplier: "宁波华翔汽配厂", amount: 12000 },
+   482→   482→    description: "创建采购订单 PO-2026-0001", created_at: daysAgo(5),
+   483→   483→  },
+   484→   484→  {
+   485→   485→    id: "al-5", user_id: "u-admin", user_name: "管理员", module: "orders", action: "status_change",
+   486→   486→    record_id: "o-002", record_code: "OD-2026-0002",
+   487→   487→    before_data: { status: "shipped" }, after_data: { status: "completed" },
+   488→   488→    description: "订单状态变更：shipped → completed", created_at: daysAgo(5),
+   489→   489→  },
+   490→   490→];
+   491→   491→
+   492→   492→const seedStockMovements: StockMovement[] = [
+   493→   493→  {
+   494→   494→    id: "sm-1", movement_type: "outbound_sale", product_id: "p-005", product_name: "深沟球轴承6203",
+   495→   495→    warehouse_id: "wh-001", warehouse_name: "主仓库", quantity: -500,
+   496→   496→    before_quantity: 600, after_quantity: 100,
+   497→   497→    reference_type: "order", reference_id: "o-002",
+   498→   498→    notes: "订单 OD-2026-0002 销售出库", created_at: daysAgo(15),
+   499→   499→  },
+   500→   500→  {
+   501→   501→    id: "sm-2", movement_type: "freeze", product_id: "p-009", product_name: "火花塞",
+   502→   502→    warehouse_id: "wh-001", warehouse_name: "主仓库", quantity: 2000,
+   503→   503→    before_quantity: 300, after_quantity: 300,
+   504→   504→    reference_type: "order", reference_id: "o-001",
+   505→   505→    notes: "订单 OD-2026-0001 确认冻结", created_at: daysAgo(5),
+   506→   506→  },
+   507→   507→];
+   508→   508→
+   509→   509→// Store接口
+   510→   510→interface StoreState {
+   511→   511→  // 当前用户
+   512→   512→  currentUser: User | null;
+   513→   513→  // 数据集
+   514→   514→  users: User[];
+   515→   515→  customers: Customer[];
+   516→   516→  suppliers: Supplier[];
+   517→   517→  products: Product[];
+   518→   518→  categories: ProductCategory[];
+   519→   519→  inquiries: Inquiry[];
+   520→   520→  quotations: Quotation[];
+   521→   521→  orders: Order[];
+   522→   522→  purchaseRequests: PurchaseRequest[];
+   523→   523→  purchaseOrders: PurchaseOrder[];
+   524→   524→  warehouses: Warehouse[];
+   525→   525→  inventory: Inventory[];
+   526→   526→  stockMovements: StockMovement[];
+   527→   527→  shipments: Shipment[];
+   528→   528→  receivables: Receivable[];
+   529→   529→  payables: Payable[];
+   530→   530→  documents: Document[];
+   531→   531→  auditLogs: AuditLog[];
+   532→   532→  systemSettings: SystemSettings;
+   533→   533→  exchangeRates: ExchangeRate[];
+   534→   534→  notifications: Notification[];
+   535→   535→
+   536→   536→  // Actions
+   537→   537→  login: (email: string, _password: string) => User | null;
+   538→   538→  logout: () => void;
+   539→   539→  addAuditLog: (log: Omit<AuditLog, "id" | "created_at">) => void;
+   540→   540→  // Reset（开发用）
+   541→   541→  reset: () => void;
+   542→   542→}
+   543→   543→
+   544→   544→const initialState = {
+   545→   545→  currentUser: null as User | null,
+   546→   546→  users: seedUsers,
+   547→   547→  customers: seedCustomers,
+   548→   548→  suppliers: seedSuppliers,
+   549→   549→  products: seedProducts,
+   550→   550→  categories: seedCategories,
+   551→   551→  inquiries: seedInquiries,
+   552→   552→  quotations: seedQuotations,
+   553→   553→  orders: seedOrders,
+   554→   554→  purchaseRequests: seedPurchaseRequests,
+   555→   555→  purchaseOrders: seedPurchaseOrders,
+   556→   556→  warehouses: seedWarehouses,
+   557→   557→  inventory: seedInventory,
+   558→   558→  stockMovements: seedStockMovements,
+   559→   559→  shipments: seedShipments,
+   560→   560→  receivables: seedReceivables,
+   561→   561→  payables: seedPayables,
+   562→   562→  documents: seedDocuments,
+   563→   563→  auditLogs: seedAuditLogs,
+   564→   564→  systemSettings: seedSystemSettings,
+   565→   565→  exchangeRates: seedExchangeRates,
+   566→   566→  notifications: seedNotifications,
+   567→   567→};
+   568→   568→
+   569→   569→export const useStore = create<StoreState>()(
+   570→   570→  persist(
+   571→   571→    (set, get) => ({
+   572→   572→      ...initialState,
+   573→   573→
+   574→   574→      login: (email, _password) => {
+   575→   575→        const user = get().users.find((u) => u.email === email);
+   576→   576→        if (user) {
+   577→   577→          set({ currentUser: user });
+   578→   578→          return user;
+   579→   579→        }
+   580→   580→        return null;
+   581→   581→      },
+   582→   582→
+   583→   583→      logout: () => set({ currentUser: null }),
+   584→   584→
+   585→   585→      addAuditLog: (log) =>
+   586→   586→        set((state) => ({
+   587→   587→          auditLogs: [
+   588→   588→            { ...log, id: uuidv4(), created_at: today() },
+   589→   589→            ...state.auditLogs,
+   590→   590→          ],
+   591→   591→        })),
+   592→   592→
+   593→   593→      reset: () => {
+   594→   594→        // 重新生成种子数据
+   595→   595→        set({ ...initialState, currentUser: null });
+   596→   596→        // 强制重新加载以重置localStorage
+   597→   597→        if (typeof window !== "undefined") {
+   598→   598→          localStorage.removeItem("rca-erp-store");
+   599→   599→          window.location.reload();
+   600→   600→        }
+   601→   601→      },
+   602→   602→    }),
+   603→   603→    {
+   604→   604→      name: "rca-erp-store",
+   605→   605→      storage: createJSONStorage(() => {
+   606→   606→        if (typeof window !== "undefined") {
+   607→   607→          return window.localStorage;
+   608→   608→        }
+   609→   609→        // SSR-safe fallback: in-memory storage
+   610→   610→        return {
+   611→   611→          getItem: () => null,
+   612→   612→          setItem: () => {},
+   613→   613→          removeItem: () => {},
+   614→   614→        } as any;
+   615→   615→      }),
+   616→   616→      version: 1,
+   617→   617→      skipHydration: false,
+   618→   618→    },
+   619→   619→  ),
+   620→   620→);
+   621→   621→

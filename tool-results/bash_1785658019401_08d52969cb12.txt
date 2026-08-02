@@ -1,0 +1,1500 @@
+})
+.eq("id", inv.id);
+} else {
+await supabase
+.from("inventory")
+.insert({
+product_id: body.product_id,
+warehouse_id: body.warehouse_id,
+quantity: body.actual_quantity,
+});
+}
+// 3. 生成 stock_movement
+const movementType = diff > 0 ? "inbound_adjust_gain" : "outbound_adjust_loss";
+await supabase.from("stock_movements").insert({
+movement_type: movementType,
+product_id: body.product_id,
+warehouse_id: body.warehouse_id,
+quantity: diff, // 正=盘盈，负=盘亏
+before_quantity: currentQty,
+after_quantity: body.actual_quantity,
+notes: body.reason,
+});
+// 4. 写审计日志
+await logAction({
+user_id: "system",
+module: "inventory",
+action: "update",
+record_id: inv?.id,
+before_data: { quantity: currentQty },
+after_data: { quantity: body.actual_quantity, reason: body.reason },
+description: 库存调整：${currentQty} → ${body.actual_quantity}（${diff > 0 ? "盘盈" :
+"盘亏"}${Math.abs(diff)}）,
+});
+
+--- Page 73 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 73 ·
+return NextResponse.json({ message: "调整成功" });
+}
+请生成所有文件的完整代码。
+12.2 库存操作工具函数
+按 Ctrl+I 唤起 Builder，输入：
+创建 src/lib/inventory.ts，实现以下函数：
+1. freezeStock(productId, warehouseId, quantity, referenceType, referenceId)
+2. unfreezeStock(productId, warehouseId, quantity, referenceType, referenceId)
+3. inboundStock(productId, warehouseId, quantity, movementType, referenceType, referenceId)
+4. outboundStock(productId, warehouseId, quantity, movementType, referenceType, referenceId)
+5. adjustStock(productId, warehouseId, actualQuantity, reason)
+所有函数用事务（多个 supabase 调用 + try-catch 回滚），并写审计日志。
+【完整代码】
+import { createClient } from "@/lib/supabase/server";
+import { logAction } from "@/lib/audit";
+export async function freezeStock(
+productId: string, warehouseId: string, quantity: number,
+referenceType: string, referenceId: string
+) {
+const supabase = createClient();
+const { data: inv } = await supabase
+.from("inventory")
+.select("id, frozen_quantity")
+.eq("product_id", productId)
+.eq("warehouse_id", warehouseId)
+.single();
+if (!inv) throw new Error("库存记录不存在");
+await supabase
+.from("inventory")
+.update({
+frozen_quantity: inv.frozen_quantity + quantity,
+updated_at: new Date().toISOString()
+
+--- Page 74 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 74 ·
+})
+.eq("id", inv.id);
+await supabase.from("stock_movements").insert({
+movement_type: "freeze",
+product_id: productId,
+warehouse_id: warehouseId,
+quantity,
+reference_type: referenceType,
+reference_id: referenceId,
+});
+}
+export async function unfreezeStock(
+productId: string, warehouseId: string, quantity: number,
+referenceType: string, referenceId: string
+) {
+const supabase = createClient();
+const { data: inv } = await supabase
+.from("inventory")
+.select("id, frozen_quantity")
+.eq("product_id", productId)
+.eq("warehouse_id", warehouseId)
+.single();
+if (!inv) throw new Error("库存记录不存在");
+await supabase
+.from("inventory")
+.update({
+frozen_quantity: Math.max(0, inv.frozen_quantity - quantity),
+updated_at: new Date().toISOString()
+})
+.eq("id", inv.id);
+await supabase.from("stock_movements").insert({
+movement_type: "unfreeze",
+
+--- Page 75 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 75 ·
+product_id: productId,
+warehouse_id: warehouseId,
+quantity,
+reference_type: referenceType,
+reference_id: referenceId,
+});
+}
+export async function inboundStock(
+productId: string, warehouseId: string, quantity: number,
+movementType: string, referenceType: string, referenceId: string
+) {
+const supabase = createClient();
+const { data: inv } = await supabase
+.from("inventory")
+.select("id, quantity")
+.eq("product_id", productId)
+.eq("warehouse_id", warehouseId)
+.single();
+if (inv) {
+await supabase
+.from("inventory")
+.update({
+quantity: inv.quantity + quantity,
+updated_at: new Date().toISOString()
+})
+.eq("id", inv.id);
+} else {
+await supabase
+.from("inventory")
+.insert({
+product_id: productId,
+warehouse_id: warehouseId,
+
+--- Page 76 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 76 ·
+quantity,
+});
+}
+await supabase.from("stock_movements").insert({
+movement_type: movementType,
+product_id: productId,
+warehouse_id: warehouseId,
+quantity,
+reference_type: referenceType,
+reference_id: referenceId,
+});
+}
+export async function outboundStock(
+productId: string, warehouseId: string, quantity: number,
+movementType: string, referenceType: string, referenceId: string
+) {
+const supabase = createClient();
+const { data: inv } = await supabase
+.from("inventory")
+.select("id, quantity, frozen_quantity")
+.eq("product_id", productId)
+.eq("warehouse_id", warehouseId)
+.single();
+if (!inv) throw new Error("库存记录不存在");
+if (inv.quantity < quantity) throw new Error("库存不足");
+await supabase
+.from("inventory")
+.update({
+quantity: inv.quantity - quantity,
+updated_at: new Date().toISOString()
+})
+.eq("id", inv.id);
+
+--- Page 77 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 77 ·
+await supabase.from("stock_movements").insert({
+movement_type: movementType,
+product_id: productId,
+warehouse_id: warehouseId,
+quantity: -quantity, // 负数表示出库
+reference_type: referenceType,
+reference_id: referenceId,
+});
+}
+第十三章 发货管理模块
+发货管理处理订单的物流环节，支持分批发货。
+13.1 完整模块生成 Prompt
+按 Ctrl+I 唤起 Builder，输入：
+生成完整的发货管理模块。请创建以下文件：
+1. src/app/api/shipments/route.ts (GET, POST)
+2. src/app/api/shipments/[id]/route.ts (GET, PUT, DELETE)
+3. src/app/api/shipments/[id]/ship/route.ts (POST - 标记已发货)
+4. src/app/api/shipments/[id]/deliver/route.ts (POST - 标记已签收)
+5. src/components/shipments/shipment-form.tsx
+6. src/app/(dashboard)/shipments/page.tsx
+7. src/app/(dashboard)/shipments/[id]/page.tsx
+【发货表单字段】
+- 选择订单（必须是 status=producing 的订单）
+- 发货日期（默认今天）
+- 物流方式（下拉：sea/air/express/land）
+- 物流公司、物流单号
+- 集装箱号、提单号（仅海运时必填）
+- 报关单号（可选）
+【装箱明细表】
+- 自动带出订单的所有 order_items
+- 每行显示：产品、订单数量、已发货数量、本次发货数量（可编辑，默认=订单数量-已发货数量）
+- 每行可输入：箱数、重量(kg)、体积(cbm)
+- 底部显示总箱数、总重量、总体积
+【POST 创建 API 完整代码】
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { generateFormattedCode } from "@/lib/code-generator";
+
+--- Page 78 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 78 ·
+import { logAction } from "@/lib/audit";
+export async function POST(request: NextRequest) {
+const body = await request.json();
+const supabase = createClient();
+// 1. 查询订单状态
+const { data: order } = await supabase
+.from("orders")
+.select("id, code, status, customer_id")
+.eq("id", body.order_id)
+.single();
+if (!order || order.status !== "producing") {
+return NextResponse.json({ error: "订单不存在或未在生产中" }, { status: 400 });
+}
+// 2. 生成发货单编码
+const code = await generateFormattedCode("shipments", "SH");
+// 3. 计算总重量和总体积
+const totalWeight = body.items.reduce((sum: number, i: any) =>
+sum + (i.weight_kg || 0), 0);
+const totalVolume = body.items.reduce((sum: number, i: any) =>
+sum + (i.volume_cbm || 0), 0);
+// 4. 创建发货单
+const { data: shipment, error } = await supabase
+.from("shipments")
+.insert({
+code,
+order_id: body.order_id,
+order_code: order.code,
+customer_id: order.customer_id,
+shipment_date: body.shipment_date,
+shipping_method: body.shipping_method,
+logistics_company: body.logistics_company,
+tracking_number: body.tracking_number,
+
+--- Page 79 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 79 ·
+container_number: body.container_number,
+bl_number: body.bl_number,
+customs_declaration_number: body.customs_declaration_number,
+total_weight_kg: totalWeight,
+total_volume_cbm: totalVolume,
+status: "pending",
+})
+.select()
+.single();
+if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+// 5. 创建发货明细
+if (body.items?.length > 0) {
+const items = body.items.filter((i: any) => i.quantity > 0).map((item: any) => ({
+shipment_id: shipment.id,
+order_item_id: item.order_item_id,
+product_id: item.product_id,
+quantity: item.quantity,
+cartons: item.cartons,
+weight_kg: item.weight_kg,
+volume_cbm: item.volume_cbm,
+}));
+await supabase.from("shipment_items").insert(items);
+}
+await logAction({
+user_id: "system",
+module: "shipments",
+action: "create",
+record_id: shipment.id,
+record_code: shipment.code,
+after_data: shipment,
+description: 创建发货单 ${shipment.code},
+});
+
+--- Page 80 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 80 ·
+return NextResponse.json({ data: shipment, message: "创建成功" }, { status: 201 });
+}
+【ship API - 标记已发货，触发库存扣减和订单状态更新 完整代码】
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { logAction } from "@/lib/audit";
+export async function POST(
+request: NextRequest,
+{ params }: { params: { id: string } }
+) {
+const supabase = createClient();
+// 1. 查询发货单和明细
+const { data: shipment } = await supabase
+.from("shipments")
+.select(`
+*,
+items:shipment_items(*),
+order:orders(id, code, status)
+`)
+.eq("id", params.id)
+.single();
+if (!shipment || shipment.status !== "pending") {
+return NextResponse.json({ error: "发货单不存在或状态不允许" }, { status: 400 });
+}
+// 2. 更新发货单状态
+await supabase
+.from("shipments")
+.update({
+status: "shipped",
+shipped_at: new Date().toISOString(),
+updated_at: new Date().toISOString()
+
+--- Page 81 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 81 ·
+})
+.eq("id", params.id);
+// 3. 对每个明细扣减库存并更新 order_items.shipped_quantity
+const warehouseId = (await supabase
+.from("warehouses")
+.select("id")
+.eq("code", "WH001")
+.single()).data?.id;
+for (const item of shipment.items) {
+// 扣减实际库存和冻结库存
+const { data: inv } = await supabase
+.from("inventory")
+.select("id, quantity, frozen_quantity")
+.eq("product_id", item.product_id)
+.eq("warehouse_id", warehouseId)
+.single();
+if (inv) {
+await supabase
+.from("inventory")
+.update({
+quantity: Math.max(0, inv.quantity - item.quantity),
+frozen_quantity: Math.max(0, inv.frozen_quantity - item.quantity),
+updated_at: new Date().toISOString()
+})
+.eq("id", inv.id);
+}
+// 生成 stock_movement
+await supabase.from("stock_movements").insert({
+movement_type: "outbound_sale",
+product_id: item.product_id,
+warehouse_id: warehouseId,
+quantity: -item.quantity,
+
+--- Page 82 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 82 ·
+reference_type: "shipment",
+reference_id: params.id,
+});
+// 更新 order_items.shipped_quantity
+if (item.order_item_id) {
+const { data: oi } = await supabase
+.from("order_items")
+.select("shipped_quantity")
+.eq("id", item.order_item_id)
+.single();
+await supabase
+.from("order_items")
+.update({
+shipped_quantity: (oi?.shipped_quantity || 0) + item.quantity
+})
+.eq("id", item.order_item_id);
+}
+}
+// 4. 检查所有 order_items 是否已全部发货
+const { data: orderItems } = await supabase
+.from("order_items")
+.select("quantity, shipped_quantity")
+.eq("order_id", shipment.order_id);
+const allShipped = orderItems?.every(i =>
+(i.shipped_quantity || 0) >= i.quantity);
+if (allShipped) {
+// 更新订单状态为 shipped
+await supabase
+.from("orders")
+.update({
+status: "shipped",
+shipped_at: new Date().toISOString(),
+
+--- Page 83 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 83 ·
+updated_at: new Date().toISOString()
+})
+.eq("id", shipment.order_id);
+}
+// 5. 自动生成单证草稿
+await supabase.from("documents").insert([
+{
+code: DOC-${Date.now()}-1,
+order_id: shipment.order_id,
+shipment_id: params.id,
+document_type: "commercial_invoice",
+status: "draft",
+},
+{
+code: DOC-${Date.now()}-2,
+order_id: shipment.order_id,
+shipment_id: params.id,
+document_type: "packing_list",
+status: "draft",
+},
+]);
+await logAction({
+user_id: "system",
+module: "shipments",
+action: "status_change",
+record_id: params.id,
+record_code: shipment.code,
+after_data: { status: "shipped" },
+description: 发货单 ${shipment.code} 已发货,
+});
+return NextResponse.json({ message: "已标记发货" });
+}
+
+--- Page 84 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 84 ·
+请生成所有文件的完整代码。
+第十四章 财务管理模块
+财务管理分为应收和应付两个 Tab。
+14.1 完整模块生成 Prompt
+按 Ctrl+I 唤起 Builder，输入：
+生成完整的财务管理模块。请创建以下文件：
+1. src/app/api/receivables/route.ts (GET, POST)
+2. src/app/api/receivables/[id]/route.ts (GET, PUT, DELETE)
+3. src/app/api/receivables/[id]/payment/route.ts (POST - 收款登记)
+4. src/app/api/payables/route.ts (GET, POST)
+5. src/app/api/payables/[id]/route.ts (GET, PUT, DELETE)
+6. src/app/api/payables/[id]/payment/route.ts (POST - 付款登记)
+7. src/app/api/finance/summary/route.ts (GET - 财务看板)
+8. src/app/api/finance/overdue-count/route.ts (GET - 逾期统计)
+9. src/app/(dashboard)/finance/page.tsx (含顶部看板 + 双 Tab)
+10. src/components/finance/payment-dialog.tsx (收款/付款弹窗)
+【财务看板 API 完整代码】
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+export async function GET() {
+const supabase = createClient();
+// 应收总额
+const { data: receivables } = await supabase
+.from("receivables")
+.select("amount, received_amount, status")
+.is("deleted_at", null);
+const totalReceivable = receivables?.reduce((sum, r) =>
+sum + Number(r.amount), 0) || 0;
+const totalReceived = receivables?.reduce((sum, r) =>
+sum + Number(r.received_amount || 0), 0) || 0;
+const overdueReceivable = receivables
+?.filter(r => r.status === "overdue")
+.reduce((sum, r) => sum + Number(r.amount), 0) || 0;
+
+--- Page 85 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 85 ·
+// 应付总额
+const { data: payables } = await supabase
+.from("payables")
+.select("amount, paid_amount, status")
+.is("deleted_at", null);
+const totalPayable = payables?.reduce((sum, p) =>
+sum + Number(p.amount), 0) || 0;
+const totalPaid = payables?.reduce((sum, p) =>
+sum + Number(p.paid_amount || 0), 0) || 0;
+const overduePayable = payables
+?.filter(p => p.status === "overdue")
+.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+return NextResponse.json({
+receivable: {
+total: totalReceivable,
+received: totalReceived,
+overdue: overdueReceivable,
+pending: totalReceivable - totalReceived,
+},
+payable: {
+total: totalPayable,
+paid: totalPaid,
+overdue: overduePayable,
+pending: totalPayable - totalPaid,
+},
+});
+}
+【收款登记 API - 支持部分收款 完整代码】
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { logAction } from "@/lib/audit";
+
+--- Page 86 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 86 ·
+export async function POST(
+request: NextRequest,
+{ params }: { params: { id: string } }
+) {
+const body = await request.json();
+// body: { amount, payment_date, payment_method, bank_reference, notes }
+const supabase = createClient();
+// 1. 查询应收
+const { data: rec } = await supabase
+.from("receivables")
+.select("*")
+.eq("id", params.id)
+.single();
+if (!rec) return NextResponse.json({ error: "应收不存在" }, { status: 404 });
+if (["received", "cancelled"].includes(rec.status)) {
+return NextResponse.json({ error: "当前状态不允许收款" }, { status: 400 });
+}
+// 2. 创建收款记录
+await supabase.from("receivable_payments").insert({
+receivable_id: params.id,
+amount: body.amount,
+payment_date: body.payment_date,
+payment_method: body.payment_method,
+bank_reference: body.bank_reference,
+exchange_rate: rec.exchange_rate,
+notes: body.notes,
+});
+// 3. 更新应收的 received_amount 和 status
+const newReceived = Number(rec.received_amount || 0) + Number(body.amount);
+let newStatus;
+if (newReceived >= Number(rec.amount)) {
+newStatus = "received";
+
+--- Page 87 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 87 ·
+} else if (newReceived > 0) {
+newStatus = "partial";
+} else {
+newStatus = "pending";
+}
+await supabase
+.from("receivables")
+.update({
+received_amount: newReceived,
+status: newStatus,
+received_at: newStatus === "received" ? new Date().toISOString() : null,
+updated_at: new Date().toISOString()
+})
+.eq("id", params.id);
+await logAction({
+user_id: "system",
+module: "receivables",
+action: "update",
+record_id: params.id,
+record_code: rec.code,
+after_data: { received_amount: newReceived, status: newStatus },
+description: 收款 ${body.amount}，累计已收 ${newReceived}/${rec.amount},
+});
+return NextResponse.json({ message: "收款成功" });
+}
+【逾期检测 - Supabase 定时任务】
+在 Supabase Dashboard → Database → Functions 创建 pg_cron 任务：
+SELECT cron.schedule(
+'check-overdue-receivables',
+'0 0 *', -- 每天 0 点
+$$
+UPDATE receivables
+
+--- Page 88 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 88 ·
+SET status = 'overdue'
+WHERE due_date < CURRENT_DATE
+AND status IN ('pending', 'partial')
+AND deleted_at IS NULL;
+$$
+);
+SELECT cron.schedule(
+'check-overdue-payables',
+'0 0 *',
+$$
+UPDATE payables
+SET status = 'overdue'
+WHERE due_date < CURRENT_DATE
+AND status IN ('pending', 'partial')
+AND deleted_at IS NULL;
+$$
+);
+【汇率换算工具 - src/lib/exchange-rate.ts】
+import { createClient } from "@/lib/supabase/server";
+export async function getRate(currency: string): Promise<number> {
+if (currency === "CNY") return 1;
+const supabase = createClient();
+const { data } = await supabase
+.from("exchange_rates")
+.select("rate_to_cny")
+.eq("currency", currency)
+.order("effective_date", { ascending: false })
+.limit(1)
+.single();
+return data?.rate_to_cny || 1;
+}
+
+--- Page 89 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 89 ·
+export function convertToCNY(amount: number, currency: string, rate: number): number {
+if (currency === "CNY") return amount;
+return amount * rate;
+}
+export function formatMultiCurrency(amount: number, currency: string, rate: number) {
+const original = formatCurrency(amount, currency);
+if (currency === "CNY") return original;
+const cny = convertToCNY(amount, currency, rate);
+return ${original} (≈ ${formatCurrency(cny, "CNY")});
+}
+请生成所有文件的完整代码。
+第十五章 单证管理模块
+单证管理是外贸 ERP 区别于普通进销存的关键模块。
+15.1 单证类型
+类型代码
+中文名
+说明
+commercial_invoice
+商业发票
+结算和报关的核心单据
+packing_list
+装箱单
+列明每箱内容
+bill_of_lading
+提单
+海运物权凭证
+certificate_of_origin
+原产地证
+证明货物原产国
+customs_declaration
+报关单
+海关申报单据
+inspection_certificate
+商检证
+商品检验证明
+insurance_policy
+保险单
+货物运输保险
+other
+其他
+其他类型单证
+15.2 完整模块生成 Prompt
+按 Ctrl+I 唤起 Builder，输入：
+
+--- Page 90 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 90 ·
+生成完整的单证管理模块。请创建以下文件：
+1. src/app/api/documents/route.ts (GET, POST)
+2. src/app/api/documents/[id]/route.ts (GET, PUT, DELETE)
+3. src/app/api/documents/upload/route.ts (POST - 上传文件到 Storage)
+4. src/app/api/documents/[id]/generate-pdf/route.ts (POST - 自动生成 PDF)
+5. src/app/(dashboard)/documents/page.tsx
+6. src/app/(dashboard)/documents/[id]/page.tsx
+【Storage 配置】
+在 Supabase Dashboard → Storage → New bucket，名称填"documents"，勾选"Public bucket"
+【生成 Commercial Invoice PDF 完整代码】
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+export async function POST(
+request: NextRequest,
+{ params }: { params: { id: string } }
+) {
+const supabase = createClient();
+// 1. 查询单证和关联订单
+const { data: doc } = await supabase
+.from("documents")
+.select(`
+*,
+order:orders(
+*,
+customer:customers(*),
+items:order_items(*)
+)
+`)
+.eq("id", params.id)
+.single();
+if (!doc) return NextResponse.json({ error: "单证不存在" }, { status: 404 });
+// 2. 查询公司信息
+
+--- Page 91 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 91 ·
+const { data: settings } = await supabase
+.from("system_settings")
+.select("key, value")
+.in("key", ["company_name", "company_name_en", "address", "email", "phone"]);
+const companyInfo: any = {};
+settings?.forEach(s => companyInfo[s.key] = s.value);
+// 3. 生成 PDF
+const pdf = new jsPDF();
+// 标题
+pdf.setFontSize(20);
+pdf.setFont("helvetica", "bold");
+pdf.text("COMMERCIAL INVOICE", 105, 20, { align: "center" });
+// 公司信息
+pdf.setFontSize(10);
+pdf.setFont("helvetica", "normal");
+pdf.text(companyInfo.company_name || "RCA Auto Parts", 14, 35);
+pdf.text(companyInfo.address || "", 14, 40);
+pdf.text(Email: ${companyInfo.email || ""} Tel: ${companyInfo.phone || ""}, 14, 45);
+// 发票信息
+pdf.text(Invoice No: ${doc.code}, 140, 35);
+pdf.text(Date: ${new Date().toLocaleDateString()}, 140, 40);
+// 买方信息
+pdf.text("To:", 14, 60);
+pdf.text(doc.order?.customer?.name || "", 14, 65);
+pdf.text(doc.order?.customer?.address || "", 14, 70);
+pdf.text(doc.order?.customer?.country || "", 14, 75);
+// 明细表
+autoTable(pdf, {
+startY: 85,
+head: [["No.", "Description", "OEM", "Qty", "Unit Price", "Amount"]],
+body: doc.order?.items?.map((item: any, idx: number) => [
+idx + 1,
+
+--- Page 92 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 92 ·
+item.product_name || "",
+item.oem_number || "",
+${item.quantity} ${item.unit || "pcs"},
+$${item.unit_price},
+$${(item.quantity * item.unit_price).toFixed(2)},
+]) || [],
+theme: "grid",
+headStyles: { fillColor: [54, 78, 91] },
+});
+// 总金额
+const finalY = (pdf as any).lastAutoTable.finalY || 85;
+pdf.setFontSize(12);
+pdf.setFont("helvetica", "bold");
+pdf.text(
+Total: ${doc.order?.currency || "USD"} ${doc.order?.total_amount},
+196, finalY + 10, { align: "right" }
+);
+// 签字栏
+pdf.setFontSize(10);
+pdf.setFont("helvetica", "normal");
+pdf.text("Signature: ____________", 14, finalY + 40);
+pdf.text("Terms: FOB Payment: T/T", 14, finalY + 50);
+// 4. 上传 PDF 到 Storage
+const pdfBuffer = pdf.output("arraybuffer");
+const fileName = ${params.id}/commercial-invoice-${Date.now()}.pdf;
+const adminClient = createAdminClient();
+const { error: uploadError } = await adminClient.storage
+.from("documents")
+.upload(fileName, pdfBuffer, { contentType: "application/pdf" });
+if (uploadError) {
+return NextResponse.json({ error: uploadError.message }, { status: 500 });
+}
+
+--- Page 93 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 93 ·
+const { data: urlData } = adminClient.storage
+.from("documents")
+.getPublicUrl(fileName);
+// 5. 更新单证记录
+await supabase
+.from("documents")
+.update({
+file_url: urlData.publicUrl,
+issued_date: new Date().toISOString().split("T")[0],
+status: "issued",
+updated_at: new Date().toISOString()
+})
+.eq("id", params.id);
+return NextResponse.json({
+url: urlData.publicUrl,
+message: "PDF 生成成功"
+});
+}
+请生成所有文件的完整代码。
+第十六章 操作日志与系统设置
+16.1 完整模块生成 Prompt
+按 Ctrl+I 唤起 Builder，输入：
+
+--- Page 94 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 94 ·
+生成操作日志和系统设置两个模块。请创建以下文件：
+1. src/app/api/audit-logs/route.ts (GET - 列表)
+2. src/app/api/audit-logs/[id]/route.ts (GET - 详情)
+3. src/app/(dashboard)/audit-logs/page.tsx
+4. src/app/(dashboard)/audit-logs/[id]/page.tsx
+5. src/components/audit-logs/field-diff.tsx (字段级 diff 展示)
+6. src/app/api/system-settings/route.ts (GET, PUT)
+7. src/app/api/exchange-rates/route.ts (GET, POST)
+8. src/app/api/exchange-rates/sync/route.ts (POST - 同步外部 API)
+9. src/app/(dashboard)/settings/page.tsx (3 Tab)
+10. src/components/settings/company-info-form.tsx
+11. src/components/settings/exchange-rate-manager.tsx
+12. src/components/settings/business-rules-form.tsx
+【字段 diff 组件完整代码】
+"use client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from
+"@/components/ui/table";
+interface FieldDiffProps {
+before: Record<string, any> | null;
+after: Record<string, any> | null;
+fieldLabels?: Record<string, string>;
+}
+export function FieldDiff({ before, after, fieldLabels = {} }: FieldDiffProps) {
+const allKeys = Array.from(new Set([
+...(before ? Object.keys(before) : []),
+...(after ? Object.keys(after) : []),
+]));
+return (
+<Table>
+<TableHeader>
+<TableRow>
+<TableHead>字段</TableHead>
+<TableHead>旧值</TableHead>
+<TableHead>新值</TableHead>
+</TableRow>
+</TableHeader>
+<TableBody>
+{allKeys.map(key => {
+
+--- Page 95 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 95 ·
+const beforeVal = before?.[key];
+const afterVal = after?.[key];
+const changed = JSON.stringify(beforeVal) !== JSON.stringify(afterVal);
+const isDeleted = beforeVal !== undefined && afterVal === undefined;
+const isAdded = beforeVal === undefined && afterVal !== undefined;
+return (
+<TableRow key={key}>
+<TableCell className="font-medium">
+{fieldLabels[key] || key}
+</TableCell>
+<TableCell className={isDeleted ? "text-red-500 line-through" : ""}>
+{beforeVal === null || beforeVal === undefined ? "-" : JSON.stringify(beforeVal)}
+</TableCell>
+<TableCell className={
+isAdded ? "text-green-600 font-bold" :
+changed ? "text-yellow-700 font-bold" : ""
+}>
+{afterVal === null || afterVal === undefined ? "-" : JSON.stringify(afterVal)}
+</TableCell>
+</TableRow>
+);
+})}
+</TableBody>
+</Table>
+);
+}
+【系统设置 PUT API 完整代码】
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { logAction } from "@/lib/audit";
+export async function GET() {
+const supabase = createClient();
+
+--- Page 96 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 96 ·
+const { data, error } = await supabase
+.from("system_settings")
+.select("key, value");
+if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+// 转为 key-value 字典
+const settings: Record<string, any> = {};
+data?.forEach(s => { settings[s.key] = s.value; });
+return NextResponse.json({ data: settings });
+}
+export async function PUT(request: NextRequest) {
+const body = await request.json();
+const supabase = createClient();
+for (const [key, value] of Object.entries(body)) {
+const { error } = await supabase
+.from("system_settings")
+.upsert({
+key,
+value,
+updated_at: new Date().toISOString()
+});
+if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+}
+await logAction({
+user_id: "system",
+module: "system_settings",
+action: "update",
+after_data: body,
+description: "更新系统设置",
+});
+return NextResponse.json({ message: "保存成功" });
+}
+
+--- Page 97 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 97 ·
+请生成所有文件的完整代码。
+第十七章 工作台 Dashboard
+工作台是用户每天打开的第一屏，承担"一眼看清业务全局"的职责。
+17.1 完整模块生成 Prompt
+按 Ctrl+I 唤起 Builder，输入：
+生成完整的工作台 Dashboard。请创建以下文件：
+1. src/app/api/dashboard/route.ts (GET - 聚合所有 KPI + 待办 + 图表数据)
+2. src/components/dashboard/kpi-card.tsx
+3. src/components/dashboard/todo-list.tsx
+4. src/components/dashboard/order-trend-chart.tsx (Recharts 双轴图)
+5. src/components/dashboard/customer-distribution-chart.tsx (Recharts 饼图)
+6. src/app/(dashboard)/page.tsx (组装所有组件)
+【Dashboard API 完整代码】
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+export async function GET() {
+const supabase = createClient();
+// 并行查询所有数据
+const [
+customersRes, inquiriesRes, quotationsRes, ordersRes,
+purchaseReqRes, purchaseOrdersRes, shipmentsRes, documentsRes,
+overdueRecRes, overduePayRes, pendingOrdersRes, pendingPrRes,
+expiringQuotationsRes, orderTrendRes, customerDistRes
+] = await Promise.all([
+supabase.from("customers").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("inquiries").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("quotations").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("orders").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("purchase_requests").select("*", { count: "exact", head: true }).eq("status",
+"pending"),
+supabase.from("purchase_orders").select("*", { count: "exact", head: true }).is("deleted_at", null),
+
+--- Page 98 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 98 ·
+supabase.from("shipments").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("documents").select("*", { count: "exact", head: true }).is("deleted_at", null),
+supabase.from("receivables").select("amount", { count: "exact" }).eq("status", "overdue"),
+supabase.from("payables").select("amount", { count: "exact" }).eq("status", "overdue"),
+supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending"),
+supabase.from("purchase_requests").select("*", { count: "exact", head: true }).eq("status",
+"pending"),
+// 7天内到期的报价
+supabase.from("quotations").select("*", { count: "exact", head: true })
+.eq("status", "sent")
+.gte("valid_until", new Date().toISOString().split("T")[0])
+.lte("valid_until", new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]),
+// 近6个月订单趋势
+supabase.rpc("get_order_trend"),
+// 客户国家分布
+supabase.from("customers").select("country").is("deleted_at", null),
+]);
+// 计算逾期应收总额
+const overdueRecAmount = overdueRecRes.data?.reduce((sum: number, r: any) =>
+sum + Number(r.amount), 0) || 0;
+const overduePayAmount = overduePayRes.data?.reduce((sum: number, p: any) =>
+sum + Number(p.amount), 0) || 0;
+// 客户国家分布聚合
+const countryCount: Record<string, number> = {};
+customerDistRes.data?.forEach((c: any) => {
+countryCount[c.country] = (countryCount[c.country] || 0) + 1;
+});
+const customerDistribution = Object.entries(countryCount)
+.map(([country, count]) => ({ country, count }))
+.sort((a, b) => b.count - a.count)
+.slice(0, 8);
+return NextResponse.json({
+
+--- Page 99 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 99 ·
+kpis: {
+customers_count: customersRes.count ?? 0,
+inquiries_count: inquiriesRes.count ?? 0,
+quotations_count: quotationsRes.count ?? 0,
+orders_count: ordersRes.count ?? 0,
+pending_approvals: 0, // TODO
+purchase_requests_count: purchaseReqRes.count ?? 0,
+purchase_orders_count: purchaseOrdersRes.count ?? 0,
+arrivals_count: 0, // TODO
+inbound_count: 0, // TODO
+shipments_count: shipmentsRes.count ?? 0,
+outbound_count: 0, // TODO
+documents_count: documentsRes.count ?? 0,
+},
+todos: {
+overdue_receivables: { count: overdueRecRes.count ?? 0, amount: overdueRecAmount },
+overdue_payables: { count: overduePayRes.count ?? 0, amount: overduePayAmount },
+pending_orders: pendingOrdersRes.count ?? 0,
+pending_purchase_requests: pendingPrRes.count ?? 0,
+expiring_quotations: expiringQuotationsRes.count ?? 0,
+},
+charts: {
+order_trend: orderTrendRes.data ?? [],
+customer_distribution: customerDistribution,
+},
+});
+}
+【KPI 卡片组件完整代码】
+"use client";
+import Link from "next/link";
+import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+--- Page 100 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 100 ·
+interface KpiCardProps {
+label: string;
+value: number | string;
+icon: LucideIcon;
+color: string;
+link: string;
+}
+export function KpiCard({ label, value, icon: Icon, color, link }: KpiCardProps) {
+return (
+<Link
+href={link}
+className="bg-white rounded-lg p-4 hover:shadow-md transition border border-gray-200"
+>
+<div className="flex items-center justify-between mb-2">
+<span className="text-sm text-gray-500">{label}</span>
+<Icon className={cn("h-4 w-4", color)} />
+</div>
+<div className="text-2xl font-bold">{value}</div>
+</Link>
+);
+}
+【订单趋势图 - Recharts 双轴图完整代码】
+"use client";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+Tooltip, ResponsiveContainer, ComposedChart } from "recharts";
+interface OrderTrendChartProps {
+data: { month: string; count: number; amount: number }[];
+}
+export function OrderTrendChart({ data }: OrderTrendChartProps) {
+return (
+<ResponsiveContainer width="100%" height={300}>
+
+--- Page 101 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 101 ·
+<ComposedChart data={data}>
+<CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+<XAxis dataKey="month" stroke="#888" fontSize={12} />
+<YAxis yAxisId="left" stroke="#888" fontSize={12} />
+<YAxis yAxisId="right" orientation="right" stroke="#888" fontSize={12} />
+<Tooltip
+contentStyle={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8 }}
+/>
+<Bar yAxisId="right" dataKey="amount" fill="#3298cb" name="金额" />
+<Line
+yAxisId="left"
+type="monotone"
+dataKey="count"
+stroke="#c76747"
+strokeWidth={2}
+name="订单数"
+/>
+</ComposedChart>
+</ResponsiveContainer>
+);
+}
+【客户分布饼图完整代码】
+"use client";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+const COLORS = ["#3298cb", "#c76747", "#437453", "#9c7d3d", "#567a9e", "#94524c", "#417f9e",
+"#8a6b5a"];
+interface CustomerDistributionChartProps {
+data: { country: string; count: number }[];
+}
+export function CustomerDistributionChart({ data }: CustomerDistributionChartProps) {
+return (
+<ResponsiveContainer width="100%" height={300}>
+
+--- Page 102 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 102 ·
+<PieChart>
+<Pie
+data={data}
+dataKey="count"
+nameKey="country"
+cx="50%"
+cy="50%"
+outerRadius={80}
+label={(entry: any) => ${entry.country}: ${entry.count}}
+>
+{data.map((_, index) => (
+<Cell key={index} fill={COLORS[index % COLORS.length]} />
+))}
+</Pie>
+<Tooltip />
+<Legend />
+</PieChart>
+</ResponsiveContainer>
+);
+}
+【工作台主页完整代码】
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { Users, MessageSquare, FileText, ShoppingCart,
+ClipboardList, Truck, Ship, DollarSign, FolderOpen,
+History, Package, Warehouse } from "lucide-react";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { OrderTrendChart } from "@/components/dashboard/order-trend-chart";
+import { CustomerDistributionChart } from
+"@/components/dashboard/customer-distribution-chart";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+
+--- Page 103 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 103 ·
+export default function DashboardPage() {
+const { data, isLoading } = useQuery({
+queryKey: ["dashboard"],
+queryFn: async () => {
+const res = await fetch("/api/dashboard");
+return res.json();
+},
+});
+if (isLoading) return <div>加载中...</div>;
+return (
+<div className="space-y-6">
+<h1 className="text-2xl font-bold">早上好，管理员</h1>
+{/ KPI 卡片 /}
+<div className="grid grid-cols-4 gap-4">
+<KpiCard label="客户数" value={data.kpis.customers_count} icon={Users} color="text-blue-500"
+link="/customers" />
+<KpiCard label="询盘数" value={data.kpis.inquiries_count} icon={MessageSquare}
+color="text-green-500" link="/inquiries" />
+<KpiCard label="报价数" value={data.kpis.quotations_count} icon={FileText}
+color="text-purple-500" link="/quotations" />
+<KpiCard label="订单数" value={data.kpis.orders_count} icon={ShoppingCart}
+color="text-orange-500" link="/orders" />
+<KpiCard label="请购数" value={data.kpis.purchase_requests_count} icon={ClipboardList}
+color="text-cyan-500" link="/purchases" />
+<KpiCard label="采购数" value={data.kpis.purchase_orders_count} icon={Truck}
+color="text-pink-500" link="/purchases" />
+<KpiCard label="发货数" value={data.kpis.shipments_count} icon={Ship} color="text-indigo-500"
+link="/shipments" />
+<KpiCard label="单证数" value={data.kpis.documents_count} icon={FolderOpen}
+color="text-teal-500" link="/documents" />
+</div>
+{/ 待办提醒 /}
+<div className="bg-white rounded-lg p-4 border border-gray-200">
+<h3 className="font-bold mb-3">待办提醒</h3>
+
+--- Page 104 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 104 ·
+<div className="space-y-2">
+<Link href="/finance?status=overdue" className="flex items-center justify-between p-2
+hover:bg-gray-50 rounded">
+<span className="text-sm">逾期应收</span>
+<Badge variant="destructive">{data.todos.overdue_receivables.count}</Badge>
+</Link>
+<Link href="/finance?status=overdue" className="flex items-center justify-between p-2
+hover:bg-gray-50 rounded">
+<span className="text-sm">逾期应付</span>
+<Badge variant="destructive">{data.todos.overdue_payables.count}</Badge>
+</Link>
+<Link href="/orders?status=pending" className="flex items-center justify-between p-2
+hover:bg-gray-50 rounded">
+<span className="text-sm">待处理订单</span>
+<Badge variant="secondary">{data.todos.pending_orders}</Badge>
+</Link>
+<Link href="/purchases?status=pending" className="flex items-center justify-between p-2
+hover:bg-gray-50 rounded">
+<span className="text-sm">待处理请购</span>
+<Badge variant="secondary">{data.todos.pending_purchase_requests}</Badge>
+</Link>
+<Link href="/quotations?status=expiring" className="flex items-center justify-between p-2
+hover:bg-gray-50 rounded">
+<span className="text-sm">即将过期报价</span>
+<Badge variant="outline">{data.todos.expiring_quotations}</Badge>
+</Link>
+</div>
+</div>
+{/ 图表 /}
+<div className="grid grid-cols-2 gap-4">
+<div className="bg-white rounded-lg p-4 border border-gray-200">
+<h3 className="font-bold mb-3">近 6 个月订单趋势</h3>
+<OrderTrendChart data={data.charts.order_trend} />
+</div>
+
+--- Page 105 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 105 ·
+<div className="bg-white rounded-lg p-4 border border-gray-200">
+<h3 className="font-bold mb-3">客户国家分布</h3>
+<CustomerDistributionChart data={data.charts.customer_distribution} />
+</div>
+</div>
+</div>
+);
+}
+请生成所有文件的完整代码。
+第十八章 部署上线与持续迭代
+18.1 Vercel 部署方案（推荐）
+Vercel 是 Next.js 官方推荐的部署平台，免费版足够小型 ERP 使用。
+步骤 1：代码推送到 GitHub
+在 Trae 终端执行：
+git init
+git add .
+git commit -m "Initial commit: RCA6.0 ERP"
+git branch -M main
+git remote add origin https://github.com/你的用户名/rca-erp.git
+git push -u origin main
+步骤 2：在 Vercel 导入项目
+访问 https://vercel.com 用 GitHub 登录。点击"Add New Project" → 选择 rca-erp 仓库 →
+点击"Import"。
+步骤 3：配置环境变量
+在 Vercel 项目设置页 → Environment Variables，添加与 .env.local 相同的变量：
+• NEXT_PUBLIC_SUPABASE_URL
+• NEXT_PUBLIC_SUPABASE_ANON_KEY
+• SUPABASE_SERVICE_ROLE_KEY
+• NEXT_PUBLIC_APP_NAME=RCA6.0 ERP
+• NEXT_PUBLIC_APP_URL=https://你的项目名.vercel.app
+步骤 4：部署
+
+--- Page 106 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 106 ·
+点击"Deploy"按钮，Vercel 自动执行 pnpm build 并部署。约 2-3 分钟后完成，得到一个
+https://xxx.vercel.app 的访问地址。
+步骤 5：配置自定义域名（可选）
+在 Vercel 项目设置 → Domains，添加自己的域名（如
+erp.yourcompany.com）。按提示在域名注册商处添加 CNAME 记录。Vercel 自动配置 HTTPS。
+18.2 阿里云 ECS 自部署方案
+如果公司要求数据私有化或 Vercel 访问不稳定，可以用阿里云 ECS 自部署。
+步骤 1：购买 ECS 实例
+在阿里云控制台购买 ECS：2 核 4G 内存，40G 系统盘，Ubuntu 22.04
+系统，按量付费或包月。建议选杭州或北京区域。
+步骤 2：安装 Docker
+SSH 连接服务器后执行：
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker
+systemctl start docker
+apt install -y docker-compose
+步骤 3：创建 Dockerfile
+按 Ctrl+I 唤起 Builder，输入：
+在项目根目录创建 Dockerfile，多阶段构建：
+# Stage 1: 安装依赖
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Stage 2: 构建
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build
+# Stage 3: 运行
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+EXPOSE 3000
+CMD ["node", "server.js"]
+注意：需要在 next.config.mjs 中添加 output: "standalone" 配置。
+同时创建 docker-compose.yml，包含 erp 服务和 nginx 反向代理服务，把 80 端口转发到 3000。
+步骤 4：部署到服务器
+
+--- Page 107 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 107 ·
+git clone 代码到服务器
+docker-compose up -d --build
+访问 http://服务器IP 验证部署成功。
+步骤 5：配置 HTTPS
+apt install certbot python3-certbot-nginx
+certbot --nginx -d erp.yourcompany.com
+证书 90 天自动续期。
+18.3 性能优化
+优化项
+方法
+收益
+数据库索引
+常用筛选字段建索引
+查询快 5-10 倍
+API 缓存
+工作台数据缓存 5 分钟
+减少 80% DB 查询
+前端 Bundle
+dynamic import 拆分大组件
+首屏快 30-50%
+图片优化
+next/image 自动优化
+体积减 60%
+CDN 加速
+Vercel CDN 或 Cloudflare
+全国访问加速
+18.4 监控与告警
+推荐用 Sentry 监控错误（免费版 5000 错误/月）：
+pnpm add @sentry/nextjs
+npx @sentry/wizard@latest -i nextjs
+18.5 后续迭代工作流
+上线后的迭代遵循"三步法"：
+1. 描述变更：一句话说清楚要改什么
+2. 让 Trae 改代码：把变更描述+相关现有代码+数据库 schema 喂给 Trae Builder
+3. 测试与合并：运行测试用例，PR review 后合并
+Git 工作流：
+git checkout -b feature/xxx
+# Trae Builder 修改代码
+pnpm test # 运行测试
+git add . && git commit -m "feat: 描述"
+git push origin feature/xxx
+# GitHub 创建 PR → Code Review → 合并 main → Vercel 自动部署
+教程总结：完成本教程后你已经掌握了：① 用 Trae 从零搭建 Next.js 全栈项目 ② 设计和实现 14 模块
+ERP 系统 ③ 实现订单状态机和事务性副作用 ④ 部署到 Vercel 或阿里云 ⑤ 持续迭代方法论。AI
+是放大器——配合良好的工程纪律，你能做到传统团队 3-5 倍的产出。
+
+--- Page 108 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 108 ·
+附录 A：Trae 快捷键速查
+A.1 AI 相关
+快捷键
+功能
+使用场景
+Ctrl+L
+唤起 Chat 对话面板
+问问题、生成代码片段
+Ctrl+I
+唤起 Builder 内联输入
+多文件生成、批量修改
+Tab
+接受 AI 代码补全
+编辑代码时自动弹出
+Esc
+拒绝补全
+不想用 AI 建议时
+Ctrl+Shift+L
+选中文件作为上下文
+让 AI 基于当前文件回答
+Ctrl+Shift+Enter
+解释选中代码
+理解陌生代码
+A.2 文件与编辑
+快捷键
+功能
+Ctrl+P
+快速打开文件
+Ctrl+Shift+P
+命令面板
+Ctrl+S
+保存
+Ctrl+Z / Ctrl+Y
+撤销 / 重做
+Ctrl+X (未选中)
+剪切当前行
+Ctrl+C (未选中)
+复制当前行
+Ctrl+D
+选中下一个相同词
+Ctrl+Shift+K
+删除当前行
+Alt+↑/↓
+上下移动当前行
+Ctrl+/
+切换行注释
+A.3 导航与终端
+快捷键
+功能
+Ctrl+G
+跳转到行
+Ctrl+`
+打开/关闭终端
+Ctrl+B
+切换侧边栏
+Ctrl+Shift+E
+聚焦资源管理器
+Ctrl+Shift+F
+全局搜索
+Ctrl+\
+拆分编辑器
+Ctrl+W
+关闭当前标签
+附录 B：常见报错与解决
+E1: Module not found: @/components/ui/xxx
+• 原因：shadcn 组件未安装
+
+--- Page 109 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 109 ·
+• 解决：npx shadcn-ui@latest add xxx
+E2: Supabase connection refused
+• 原因：环境变量配置错误
+• 解决：检查 .env.local，重启 pnpm dev
+E3: RLS blocked the query
+• 原因：Supabase RLS 未关闭
+• 解决：ALTER TABLE 表名 DISABLE ROW LEVEL SECURITY;
+E4: Hydration mismatch
+• 原因：服务端和客户端渲染不一致
+• 解决：把 Date.now()/Math.random() 放到 useEffect
+E5: Cannot read properties of undefined
+• 原因：访问 undefined 对象的属性
+• 解决：用可选链 data?.items?.[0]?.name
+E6: CORS error
+• 原因：前端跨域被拦截
+• 解决：API 路径以 /api 开头，同源访问
+E7: 401 Unauthorized
+• 原因：未登录或 session 过期
+• 解决：检查 middleware 和 Supabase Auth session
+E8: Unique constraint violation
+• 原因：唯一约束冲突
+• 解决：检查 generateCode，或用 ON CONFLICT DO NOTHING
+E9: 500 Internal Server Error
+• 原因：服务端异常
+• 解决：查看终端堆栈，复制给 Trae Chat 修复
+E10: TypeScript type mismatch
+• 原因：类型不匹配
+• 解决：重新生成 supabase gen types
+E11: useSearchParams should be in suspense
+• 原因：useSearchParams 未包 Suspense
+• 解决：<Suspense fallback={...}><Comp/></Suspense>
+E12: Hooks can only be called in client component
+• 原因：Server Component 中用了 Hook
+• 解决：文件顶部加 "use client"
+E13: pnpm: command not found
+• 原因：pnpm 未安装
+
+--- Page 110 ---
+用 Trae 从零搭建 ERP 系统（完整版）
+Super Z · 2026
+· 110 ·
+• 解决：npm install -g pnpm
+E14: Port 3000 is already in use
+• 原因：3000 端口被占用
+• 解决：lsof -i :3000 找进程并 kill，或换端口
+E15: Git failed to push some refs
+• 原因：远程有更新未拉取
+• 解决：git pull origin main 解决冲突后重推
+结语
+完成本教程意味着你已经从一个零基础学习者，成长为能够独立用 AI 工具开发企业级 ERP 系统的"AI
+全栈工程师"。这不是终点，而是新起点——AI 编程的能力边界还在快速扩张，今天学到的 Trae 用法明年
+可能就被更强大的工具取代。但底层方法论（需求分析、数据库设计、状态机、事务、审计、测试、部署
+）是不会过时的。
+建议接下来的三个月：
+1. 把本教程的 ERP 系统真正用起来，发现不足持续迭代
+2. 学习一个新 AI 工具（如 Cursor 或 Claude Code），对比不同工具的优劣
+3. 尝试一个新项目（如 CRM、OA、WMS），把这套方法论迁移过去
+三个月后回头看，你会发现自己已经完成了从"会用 AI"到"善用 AI"的蜕变。
+祝你编程愉快！
+AI生成
