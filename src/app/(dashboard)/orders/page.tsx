@@ -45,7 +45,20 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <PageHeader title="订单管理" description={`共 ${filtered.length} 条订单记录`} />
+      <PageHeader title="订单管理" description={`共 ${filtered.length} 条订单记录`} actions={
+        <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "订单列表", "订单", [
+          { key: "code", label: "订单号" },
+          { key: "customer_name", label: "客户" },
+          { key: "order_date", label: "下单日期" },
+          { key: "delivery_date", label: "交货日期" },
+          { key: "currency", label: "币种" },
+          { key: "total_amount", label: "总金额" },
+          { key: "status", label: "状态" },
+          { key: "trade_terms", label: "贸易条款" },
+          { key: "payment_terms", label: "付款条件" },
+          { key: "created_at", label: "创建时间" },
+        ]); }}>导出Excel</ActionButton>
+      } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索订单号/客户..." className="w-64" />
         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="全部状态" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部状态</SelectItem><SelectItem value="pending">待处理</SelectItem><SelectItem value="confirmed">已确认</SelectItem><SelectItem value="producing">生产中</SelectItem><SelectItem value="shipped">已发货</SelectItem><SelectItem value="completed">已完成</SelectItem><SelectItem value="cancelled">已取消</SelectItem></SelectContent></Select>

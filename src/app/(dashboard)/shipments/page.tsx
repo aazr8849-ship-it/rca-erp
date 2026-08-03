@@ -43,7 +43,22 @@ export default function ShipmentsPage() {
 
   return (
     <div>
-      <PageHeader title="发货计划" description={`共 ${filtered.length} 条发货记录`} />
+      <PageHeader title="发货计划" description={`共 ${filtered.length} 条发货记录`} actions={
+        <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "发货列表", "发货", [
+          { key: "code", label: "发货号" },
+          { key: "order_code", label: "订单号" },
+          { key: "customer_name", label: "客户" },
+          { key: "shipment_date", label: "发货日期" },
+          { key: "shipping_method", label: "运输方式" },
+          { key: "tracking_number", label: "运单号" },
+          { key: "container_number", label: "集装箱号" },
+          { key: "bl_number", label: "提单号" },
+          { key: "total_weight", label: "总重量" },
+          { key: "total_cartons", label: "总箱数" },
+          { key: "status", label: "状态" },
+          { key: "created_at", label: "创建时间" },
+        ]); }}>导出Excel</ActionButton>
+      } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setMethodFilter("__all__"); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索发货号/订单/客户..." className="w-64" />
         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="全部状态" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部状态</SelectItem><SelectItem value="draft">草稿</SelectItem><SelectItem value="shipped">已发货</SelectItem><SelectItem value="in_transit">运输中</SelectItem><SelectItem value="delivered">已送达</SelectItem><SelectItem value="cancelled">已取消</SelectItem></SelectContent></Select>

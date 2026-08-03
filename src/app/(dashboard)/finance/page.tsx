@@ -75,7 +75,39 @@ export default function FinancePage() {
 
   return (
     <div>
-      <PageHeader title="财务管理" description="应收账款与应付账款管理" />
+      <PageHeader title="财务管理" description="应收账款与应付账款管理" actions={
+        <ActionButton icon="export" onClick={async () => {
+          const { exportToExcel } = await import("@/lib/excel-utils");
+          const data = tab === "receivables" ? filteredRec : filteredPay;
+          const fileName = tab === "receivables" ? "应收账款" : "应付账款";
+          if (tab === "receivables") {
+            exportToExcel(data, fileName, "应收", [
+              { key: "code", label: "应收编号" },
+              { key: "customer_name", label: "客户" },
+              { key: "order_code", label: "关联订单" },
+              { key: "category", label: "类别" },
+              { key: "amount", label: "应收金额" },
+              { key: "received_amount", label: "已收金额" },
+              { key: "currency", label: "币种" },
+              { key: "due_date", label: "到期日" },
+              { key: "status", label: "状态" },
+              { key: "created_at", label: "创建时间" },
+            ]);
+          } else {
+            exportToExcel(data, fileName, "应付", [
+              { key: "code", label: "应付编号" },
+              { key: "supplier_name", label: "供应商" },
+              { key: "category", label: "类别" },
+              { key: "amount", label: "应付金额" },
+              { key: "paid_amount", label: "已付金额" },
+              { key: "currency", label: "币种" },
+              { key: "due_date", label: "到期日" },
+              { key: "status", label: "状态" },
+              { key: "created_at", label: "创建时间" },
+            ]);
+          }
+        }}>导出Excel</ActionButton>
+      } />
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">

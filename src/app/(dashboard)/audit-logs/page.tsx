@@ -44,7 +44,16 @@ export default function AuditLogsPage() {
 
   return (
     <div>
-      <PageHeader title="操作日志" description={`共 ${filtered.length} 条操作记录`} />
+      <PageHeader title="操作日志" description={`共 ${filtered.length} 条操作记录`} actions={
+        <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "操作日志", "日志", [
+          { key: "created_at", label: "时间" },
+          { key: "user_name", label: "操作人" },
+          { key: "module", label: "模块" },
+          { key: "action", label: "操作类型" },
+          { key: "record_code", label: "记录编码" },
+          { key: "description", label: "操作描述" },
+        ]); }}>导出Excel</ActionButton>
+      } />
       <FilterBar onReset={() => { setSearch(""); setModuleFilter("__all__"); setActionFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索描述/编码/操作人..." className="w-64" />
         <Select value={moduleFilter} onValueChange={setModuleFilter}><SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="全部模块" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部模块</SelectItem>{Object.entries(MODULE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select>

@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/common/search-input";
 import { GenericDataTable, type Column } from "@/components/common/data-table";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { ImportDialog } from "@/components/common/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ export default function ProductsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => !p.deleted_at);
@@ -117,7 +119,28 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <PageHeader title="产品管理" description={`共 ${filtered.length} 条产品记录`} actions={<ActionButton icon="add" onClick={() => { setEditing(null); setFormOpen(true); }}>新建产品</ActionButton>} />
+      <PageHeader title="产品管理" description={`共 ${filtered.length} 条产品记录`} actions={
+        <>
+          <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "产品列表", "产品", [
+            { key: "code", label: "编码" },
+            { key: "name", label: "产品名称" },
+            { key: "name_en", label: "英文名称" },
+            { key: "oem_number", label: "OEM号" },
+            { key: "category_name", label: "分类" },
+            { key: "brand", label: "品牌" },
+            { key: "unit", label: "单位" },
+            { key: "weight_kg", label: "重量(kg)" },
+            { key: "cost_price", label: "成本价" },
+            { key: "sale_price", label: "销售价" },
+            { key: "applicable_models", label: "适用车型" },
+            { key: "status", label: "状态" },
+            { key: "description", label: "描述" },
+            { key: "created_at", label: "创建时间" },
+          ]); }}>导出Excel</ActionButton>
+          <ActionButton icon="import" onClick={() => setImportOpen(true)}>导入Excel</ActionButton>
+          <ActionButton icon="add" onClick={() => { setEditing(null); setFormOpen(true); }}>新建产品</ActionButton>
+        </>
+      } />
       <FilterBar onReset={() => { setSearch(""); setExactMatch(false); setCategoryFilter("__all__"); setStatusFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索产品名/OEM号..." className="w-64" />
         <div className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -135,6 +158,65 @@ export default function ProductsPage() {
       </FilterBar>
       <GenericDataTable data={paged} columns={columns} pagination={{ page, pageSize, total: filtered.length, onPageChange: setPage, onPageSizeChange: setPageSize }} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/products/${r.id}`)} emptyTitle="暂无产品" />
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} onSave={handleSave} />
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        moduleName="产品"
+        templateFilename="产品导入模板"
+        columns={[
+          { key: "code", label: "编码", example: "留空则自动生成" },
+          { key: "name", label: "产品名称", required: true, example: "前制动片" },
+          { key: "name_en", label: "英文名称", example: "Front Brake Pad" },
+          { key: "oem_number", label: "OEM号", example: "OEM-TOYOTA-001" },
+          { key: "category_name", label: "分类", example: "制动系统" },
+          { key: "brand", label: "品牌", example: "Bosch" },
+          { key: "unit", label: "单位", required: true, example: "套" },
+          { key: "weight_kg", label: "重量(kg)", example: "1.2" },
+          { key: "cost_price", label: "成本价", example: "35.00" },
+          { key: "sale_price", label: "销售价", required: true, example: "58.00" },
+          { key: "applicable_models", label: "适用车型", example: "Toyota Camry,Corolla" },
+          { key: "status", label: "状态", example: "active/discontinued" },
+          { key: "description", label: "描述", example: "适用于丰田卡罗拉" },
+        ]}
+        onImport={async (data) => {
+          const errors: { row: number; message: string }[] = [];
+          let success = 0;
+          const existingCodes = new Set(useStore.getState().products.map((p) => p.code));
+
+          data.forEach((row, idx) => {
+            if (!row.name) { errors.push({ row: idx + 2, message: `第${idx + 2}行：产品名称不能为空` }); return; }
+            if (!row.unit) { errors.push({ row: idx + 2, message: `第${idx + 2}行：单位不能为空` }); return; }
+            if (!row.sale_price) { errors.push({ row: idx + 2, message: `第${idx + 2}行：销售价不能为空` }); return; }
+
+            const code = row.code || generateCode("PD");
+            if (existingCodes.has(code)) { errors.push({ row: idx + 2, message: `第${idx + 2}行：编码 ${code} 已存在，已跳过` }); return; }
+            existingCodes.add(code);
+
+            const cat = useStore.getState().categories.find((c) => c.name === row.category_name);
+
+            const newProd: Product = {
+              id: crypto.randomUUID(), code,
+              name: row.name, name_en: row.name_en || "",
+              oem_number: row.oem_number || "",
+              category_id: cat?.id, category_name: cat?.name || row.category_name || "",
+              brand: row.brand || "",
+              image_urls: [],
+              cost_price: Number(row.cost_price) || 0,
+              sale_price: Number(row.sale_price) || 0,
+              unit: row.unit,
+              weight_kg: Number(row.weight_kg) || 0,
+              status: ["active", "discontinued"].includes(row.status) ? row.status : "active",
+              applicable_models: row.applicable_models ? String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [],
+              description: row.description || "",
+              created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+            };
+            useStore.setState((state) => ({ products: [newProd, ...state.products] }));
+            addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "products", action: "create", record_id: newProd.id, record_code: newProd.code, after_data: newProd as any, description: `Excel导入创建产品 ${newProd.name} (${newProd.code})` });
+            success++;
+          });
+          return { success, errors };
+        }}
+      />
       <ConfirmDialog open={!!deleteTarget} title="删除产品" description={`确定要删除产品「${deleteTarget?.name}」吗？`} variant="destructive" confirmText="确认删除" onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
     </div>
   );

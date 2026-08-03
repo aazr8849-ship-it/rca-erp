@@ -146,7 +146,31 @@ export default function PurchasesPage() {
 
   return (
     <div>
-      <PageHeader title="采购管理" description="请购单与采购订单全流程管理" />
+      <PageHeader title="采购管理" description="请购单与采购订单全流程管理" actions={
+        <ActionButton icon="export" onClick={async () => {
+          const { exportToExcel } = await import("@/lib/excel-utils");
+          if (tab === "requests") {
+            exportToExcel(filteredPRs, "请购单列表", "请购单", [
+              { key: "code", label: "请购号" },
+              { key: "order_code", label: "关联订单" },
+              { key: "status", label: "状态" },
+              { key: "created_at", label: "创建时间" },
+            ]);
+          } else {
+            exportToExcel(filteredPOs, "采购订单列表", "采购订单", [
+              { key: "code", label: "采购号" },
+              { key: "supplier_name", label: "供应商" },
+              { key: "order_date", label: "下单日期" },
+              { key: "currency", label: "币种" },
+              { key: "total_amount", label: "总金额" },
+              { key: "status", label: "状态" },
+              { key: "trade_terms", label: "贸易条款" },
+              { key: "payment_terms", label: "付款条件" },
+              { key: "created_at", label: "创建时间" },
+            ]);
+          }
+        }}>导出Excel</ActionButton>
+      } />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="requests"><ClipboardList className="h-3.5 w-3.5 mr-1.5" />请购单 ({purchaseRequests.length})</TabsTrigger>

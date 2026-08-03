@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/common/search-input";
 import { GenericDataTable, type Column } from "@/components/common/data-table";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { ImportDialog } from "@/components/common/import-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -262,21 +263,74 @@ export default function CustomersPage() {
     setPage(1);
   };
 
-  const handleExport = () => {
-    const headers = ["编码", "名称", "联系人", "邮箱", "电话", "国家", "等级", "状态", "信用额度", "币种"];
-    const rows = filtered.map((c) => [
-      c.code, c.name, c.contact_person, c.contact_email || "", c.contact_phone || "",
-      c.country, c.level, c.status, c.credit_limit, c.preferred_currency,
+  const handleExport = async () => {
+    const { exportToExcel } = await import("@/lib/excel-utils");
+    exportToExcel(filtered, "客户列表", "客户", [
+      { key: "code", label: "编码" },
+      { key: "name", label: "客户名称" },
+      { key: "name_en", label: "英文名称" },
+      { key: "contact_person", label: "联系人" },
+      { key: "contact_email", label: "邮箱" },
+      { key: "contact_phone", label: "电话" },
+      { key: "country", label: "国家" },
+      { key: "address", label: "地址" },
+      { key: "website", label: "官网" },
+      { key: "level", label: "等级" },
+      { key: "status", label: "状态" },
+      { key: "credit_limit", label: "信用额度" },
+      { key: "payment_terms", label: "付款条件" },
+      { key: "preferred_currency", label: "偏好币种" },
+      { key: "notes", label: "备注" },
+      { key: "created_at", label: "创建时间" },
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `customers-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`已导出 ${filtered.length} 条客户数据`);
+  };
+
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleImport = async (data: any[]) => {
+    const errors: { row: number; message: string }[] = [];
+    let success = 0;
+    const existingCodes = new Set(useStore.getState().customers.map((c) => c.code));
+
+    data.forEach((row, idx) => {
+      if (!row.name) { errors.push({ row: idx + 2, message: `第${idx + 2}行：客户名称不能为空` }); return; }
+      if (!row.contact_person) { errors.push({ row: idx + 2, message: `第${idx + 2}行：联系人不能为空` }); return; }
+      if (!row.country) { errors.push({ row: idx + 2, message: `第${idx + 2}行：国家不能为空` }); return; }
+
+      const code = row.code || generateCode("CU");
+      if (existingCodes.has(code)) { errors.push({ row: idx + 2, message: `第${idx + 2}行：编码 ${code} 已存在，已跳过` }); return; }
+      existingCodes.add(code);
+
+      const newCustomer: Customer = {
+        id: crypto.randomUUID(),
+        code,
+        name: row.name,
+        name_en: row.name_en || "",
+        contact_person: row.contact_person,
+        contact_email: row.contact_email || "",
+        contact_phone: row.contact_phone || "",
+        country: row.country,
+        address: row.address || "",
+        website: row.website || "",
+        level: ["normal", "vip", "strategic"].includes(row.level) ? row.level : "normal",
+        status: ["active", "silent", "lost"].includes(row.status) ? row.status : "active",
+        credit_limit: Number(row.credit_limit) || 0,
+        payment_terms: row.payment_terms || "T/T",
+        preferred_currency: row.preferred_currency || "USD",
+        notes: row.notes || "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      useStore.setState((state) => ({ customers: [newCustomer, ...state.customers] }));
+      addAuditLog({
+        user_id: "u-admin", user_name: "管理员", module: "customers", action: "create",
+        record_id: newCustomer.id, record_code: newCustomer.code, after_data: newCustomer as any,
+        description: `Excel导入创建客户 ${newCustomer.name} (${newCustomer.code})`,
+      });
+      success++;
+    });
+
+    return { success, errors };
   };
 
   return (
@@ -286,7 +340,8 @@ export default function CustomersPage() {
         description={`共 ${total} 条客户记录`}
         actions={
           <>
-            <ActionButton icon="export" onClick={handleExport}>导出</ActionButton>
+            <ActionButton icon="export" onClick={handleExport}>导出Excel</ActionButton>
+            <ActionButton icon="import" onClick={() => setImportOpen(true)}>导入Excel</ActionButton>
             <ActionButton
               icon="add"
               onClick={() => {
@@ -359,6 +414,32 @@ export default function CustomersPage() {
         onOpenChange={setFormOpen}
         customer={editingCustomer}
         onSave={handleSave}
+      />
+
+      {/* Excel 导入弹窗 */}
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        moduleName="客户"
+        templateFilename="客户导入模板"
+        columns={[
+          { key: "code", label: "编码", example: "留空则自动生成" },
+          { key: "name", label: "客户名称", required: true, example: "上海汽车配件有限公司" },
+          { key: "name_en", label: "英文名称", example: "Shanghai Auto Parts" },
+          { key: "contact_person", label: "联系人", required: true, example: "张经理" },
+          { key: "contact_email", label: "邮箱", example: "zhang@example.com" },
+          { key: "contact_phone", label: "电话", example: "13800138001" },
+          { key: "country", label: "国家", required: true, example: "中国" },
+          { key: "address", label: "地址", example: "上海市浦东新区" },
+          { key: "website", label: "官网", example: "www.example.com" },
+          { key: "level", label: "等级", example: "normal/vip/strategic" },
+          { key: "status", label: "状态", example: "active/silent/lost" },
+          { key: "credit_limit", label: "信用额度", example: "100000" },
+          { key: "payment_terms", label: "付款条件", example: "T/T 30天" },
+          { key: "preferred_currency", label: "偏好币种", example: "USD/CNY/EUR" },
+          { key: "notes", label: "备注", example: "战略客户" },
+        ]}
+        onImport={handleImport}
       />
 
       {/* 删除确认 */}

@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/common/search-input";
 import { GenericDataTable, type Column } from "@/components/common/data-table";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { ImportDialog } from "@/components/common/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,10 +102,72 @@ export default function SuppliersPage() {
     setDeleteTarget(null);
   };
 
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleExport = async () => {
+    const { exportToExcel } = await import("@/lib/excel-utils");
+    exportToExcel(filtered, "供应商列表", "供应商", [
+      { key: "code", label: "编码" },
+      { key: "name", label: "供应商名称" },
+      { key: "name_en", label: "英文名称" },
+      { key: "contact_person", label: "联系人" },
+      { key: "contact_email", label: "邮箱" },
+      { key: "contact_phone", label: "电话" },
+      { key: "country", label: "国家" },
+      { key: "address", label: "地址" },
+      { key: "level", label: "等级" },
+      { key: "status", label: "状态" },
+      { key: "main_category", label: "主营品类" },
+      { key: "lead_time_days", label: "平均交期(天)" },
+      { key: "quality_rating", label: "质量评级(1-5)" },
+      { key: "payment_terms", label: "付款条件" },
+      { key: "notes", label: "备注" },
+      { key: "created_at", label: "创建时间" },
+    ]);
+  };
+
+  const handleImport = async (data: any[]) => {
+    const errors: { row: number; message: string }[] = [];
+    let success = 0;
+    const existingCodes = new Set(useStore.getState().suppliers.map((s) => s.code));
+
+    data.forEach((row, idx) => {
+      if (!row.name) { errors.push({ row: idx + 2, message: `第${idx + 2}行：供应商名称不能为空` }); return; }
+      if (!row.contact_person) { errors.push({ row: idx + 2, message: `第${idx + 2}行：联系人不能为空` }); return; }
+      if (!row.country) { errors.push({ row: idx + 2, message: `第${idx + 2}行：国家不能为空` }); return; }
+
+      const code = row.code || generateCode("SU");
+      if (existingCodes.has(code)) { errors.push({ row: idx + 2, message: `第${idx + 2}行：编码 ${code} 已存在，已跳过` }); return; }
+      existingCodes.add(code);
+
+      const newSup: Supplier = {
+        id: crypto.randomUUID(), code,
+        name: row.name, name_en: row.name_en || "",
+        contact_person: row.contact_person,
+        contact_email: row.contact_email || "", contact_phone: row.contact_phone || "",
+        country: row.country, address: row.address || "",
+        level: ["normal", "preferred", "strategic"].includes(row.level) ? row.level : "normal",
+        status: ["active", "blacklisted"].includes(row.status) ? row.status : "active",
+        main_category: row.main_category ? String(row.main_category).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [],
+        lead_time_days: Number(row.lead_time_days) || 15,
+        quality_rating: Math.min(5, Math.max(1, Number(row.quality_rating) || 3)),
+        payment_terms: row.payment_terms || "T/T 30天",
+        notes: row.notes || "",
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      };
+      useStore.setState((state) => ({ suppliers: [newSup, ...state.suppliers] }));
+      addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "suppliers", action: "create", record_id: newSup.id, record_code: newSup.code, after_data: newSup as any, description: `Excel导入创建供应商 ${newSup.name} (${newSup.code})` });
+      success++;
+    });
+    return { success, errors };
+  };
+
   return (
     <div>
       <PageHeader title="供应商管理" description={`共 ${filtered.length} 条供应商记录`} actions={
         <>
+          <ActionButton icon="export" onClick={handleExport}>导出Excel</ActionButton>
+          <ActionButton icon="import" onClick={() => setImportOpen(true)}>导入Excel</ActionButton>
           <ActionButton icon="add" onClick={() => { setEditing(null); setFormOpen(true); }}>新建供应商</ActionButton>
         </>
       } />
@@ -121,6 +184,30 @@ export default function SuppliersPage() {
       </FilterBar>
       <GenericDataTable data={paged} columns={columns} pagination={{ page, pageSize, total: filtered.length, onPageChange: setPage, onPageSizeChange: setPageSize }} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/suppliers/${r.id}`)} emptyTitle="暂无供应商" emptyDescription="点击右上角「新建供应商」添加" />
       <SupplierFormDialog open={formOpen} onOpenChange={setFormOpen} supplier={editing} onSave={handleSave} />
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        moduleName="供应商"
+        templateFilename="供应商导入模板"
+        columns={[
+          { key: "code", label: "编码", example: "留空则自动生成" },
+          { key: "name", label: "供应商名称", required: true, example: "宁波华翔汽配厂" },
+          { key: "name_en", label: "英文名称", example: "Ningbo Huaxiang" },
+          { key: "contact_person", label: "联系人", required: true, example: "王厂长" },
+          { key: "contact_email", label: "邮箱", example: "wang@example.com" },
+          { key: "contact_phone", label: "电话", example: "13700137001" },
+          { key: "country", label: "国家", required: true, example: "中国" },
+          { key: "address", label: "地址", example: "宁波市鄞州区" },
+          { key: "level", label: "等级", example: "normal/preferred/strategic" },
+          { key: "status", label: "状态", example: "active/blacklisted" },
+          { key: "main_category", label: "主营品类", example: "制动系统,发动机配件" },
+          { key: "lead_time_days", label: "平均交期(天)", example: "15" },
+          { key: "quality_rating", label: "质量评级(1-5)", example: "4" },
+          { key: "payment_terms", label: "付款条件", example: "T/T 30天" },
+          { key: "notes", label: "备注", example: "战略供应商" },
+        ]}
+        onImport={handleImport}
+      />
       <ConfirmDialog open={!!deleteTarget} title="删除供应商" description={`确定要删除供应商「${deleteTarget?.name}」吗？`} variant="destructive" confirmText="确认删除" onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
     </div>
   );

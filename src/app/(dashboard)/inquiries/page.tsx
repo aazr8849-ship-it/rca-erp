@@ -60,7 +60,20 @@ export default function InquiriesPage() {
 
   return (
     <div>
-      <PageHeader title="询盘管理" description={`共 ${filtered.length} 条询盘记录`} actions={<ActionButton icon="add" onClick={() => toast.info("询盘创建功能：请通过客户详情页或新建询盘按钮创建")}>新建询盘</ActionButton>} />
+      <PageHeader title="询盘管理" description={`共 ${filtered.length} 条询盘记录`} actions={
+        <>
+          <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "询盘列表", "询盘", [
+            { key: "code", label: "询盘号" },
+            { key: "customer_name", label: "客户" },
+            { key: "subject", label: "主题" },
+            { key: "source", label: "来源" },
+            { key: "priority", label: "优先级" },
+            { key: "status", label: "状态" },
+            { key: "created_at", label: "创建时间" },
+          ]); }}>导出Excel</ActionButton>
+          <ActionButton icon="add" onClick={() => toast.info("询盘创建功能：请通过客户详情页或新建询盘按钮创建")}>新建询盘</ActionButton>
+        </>
+      } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPriorityFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索询盘号/主题/客户..." className="w-64" />
         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="全部状态" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部状态</SelectItem><SelectItem value="pending">待处理</SelectItem><SelectItem value="processing">处理中</SelectItem><SelectItem value="quoted">已报价</SelectItem><SelectItem value="closed">已关闭</SelectItem><SelectItem value="cancelled">已取消</SelectItem></SelectContent></Select>

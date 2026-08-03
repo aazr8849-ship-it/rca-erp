@@ -91,7 +91,33 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader title="库存管理" description="库存查询、出入库流水、库存调整" />
+      <PageHeader title="库存管理" description="库存查询、出入库流水、库存调整" actions={
+        <ActionButton icon="export" onClick={async () => {
+          const { exportToExcel } = await import("@/lib/excel-utils");
+          const exportData = tab === "stock" ? filteredInventory : (tab === "inbound" ? inboundMovements : outboundMovements);
+          const fileName = tab === "stock" ? "库存查询" : (tab === "inbound" ? "入库记录" : "出库记录");
+          if (tab === "stock") {
+            exportToExcel(exportData, fileName, "库存", [
+              { key: "product_code", label: "产品编码" },
+              { key: "product_name", label: "产品名称" },
+              { key: "warehouse_name", label: "仓库" },
+              { key: "quantity", label: "库存数量" },
+              { key: "frozen_quantity", label: "冻结数量" },
+              { key: "available_quantity", label: "可用数量" },
+              { key: "updated_at", label: "更新时间" },
+            ]);
+          } else {
+            exportToExcel(exportData, fileName, tab === "inbound" ? "入库" : "出库", [
+              { key: "movement_type", label: "类型" },
+              { key: "product_name", label: "产品" },
+              { key: "warehouse_name", label: "仓库" },
+              { key: "quantity", label: "数量" },
+              { key: "notes", label: "备注" },
+              { key: "created_at", label: "时间" },
+            ]);
+          }
+        }}>导出Excel</ActionButton>
+      } />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="stock"><Warehouse className="h-3.5 w-3.5 mr-1.5" />库存查询 ({inventory.length})</TabsTrigger>

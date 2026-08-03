@@ -45,7 +45,20 @@ export default function QuotationsPage() {
 
   return (
     <div>
-      <PageHeader title="报价管理" description={`共 ${filtered.length} 条报价记录`} />
+      <PageHeader title="报价管理" description={`共 ${filtered.length} 条报价记录`} actions={
+        <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "报价列表", "报价", [
+          { key: "code", label: "报价号" },
+          { key: "customer_name", label: "客户" },
+          { key: "pricing_status", label: "定价状态" },
+          { key: "status", label: "状态" },
+          { key: "total_amount", label: "总金额" },
+          { key: "currency", label: "币种" },
+          { key: "valid_until", label: "有效期至" },
+          { key: "trade_terms", label: "贸易条款" },
+          { key: "payment_terms", label: "付款条件" },
+          { key: "created_at", label: "创建时间" },
+        ]); }}>导出Excel</ActionButton>
+      } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索报价号/客户..." className="w-64" />
         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="全部状态" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部状态</SelectItem><SelectItem value="draft">草稿</SelectItem><SelectItem value="sent">已发送</SelectItem><SelectItem value="accepted">已接受</SelectItem><SelectItem value="rejected">已拒绝</SelectItem><SelectItem value="expired">已过期</SelectItem></SelectContent></Select>

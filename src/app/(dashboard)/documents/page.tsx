@@ -54,7 +54,20 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <PageHeader title="单证管理" description={`共 ${filtered.length} 条单证记录`} actions={<ActionButton icon="add" onClick={() => { const order = orders[0]; if (!order) { toast.error("没有订单可创建单证"); return; } const newDoc: Document = { id: crypto.randomUUID(), code: generateCode("DOC"), order_id: order.id, order_code: order.code, document_type: "commercial_invoice", status: "draft", created_at: new Date().toISOString() } as Document; useStore.setState((state) => ({ documents: [newDoc, ...state.documents] })); toast.success("已创建单证草稿"); }}>新建单证</ActionButton>} />
+      <PageHeader title="单证管理" description={`共 ${filtered.length} 条单证记录`} actions={
+        <>
+          <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "单证列表", "单证", [
+            { key: "code", label: "单证编号" },
+            { key: "order_code", label: "关联订单" },
+            { key: "document_type", label: "单证类型" },
+            { key: "status", label: "状态" },
+            { key: "issued_date", label: "签发日期" },
+            { key: "notes", label: "备注" },
+            { key: "created_at", label: "创建时间" },
+          ]); }}>导出Excel</ActionButton>
+          <ActionButton icon="add" onClick={() => { const order = orders[0]; if (!order) { toast.error("没有订单可创建单证"); return; } const newDoc: Document = { id: crypto.randomUUID(), code: generateCode("DOC"), order_id: order.id, order_code: order.code, document_type: "commercial_invoice", status: "draft", created_at: new Date().toISOString() } as Document; useStore.setState((state) => ({ documents: [newDoc, ...state.documents] })); toast.success("已创建单证草稿"); }}>新建单证</ActionButton>
+        </>
+      } />
       <FilterBar onReset={() => { setSearch(""); setTypeFilter("__all__"); setStatusFilter("__all__"); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索单证编号/订单号..." className="w-64" />
         <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="全部类型" /></SelectTrigger><SelectContent><SelectItem value="__all__">全部类型</SelectItem>{Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select>
