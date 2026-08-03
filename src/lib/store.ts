@@ -57,68 +57,68 @@ const seedProducts: Product[] = [
   {
     id: "p-001", code: "PD001", name: "前制动片", name_en: "Front Brake Pad", oem_number: "OEM-TOYOTA-001",
     category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
-    image_urls: ["https://images.unsplash.com/photo-1614026480209-cf5a8e0a0a8e?w=400&h=400&fit=crop"], cost_price: 35.00, sale_price: 58.00, unit: "套", weight_kg: 1.2,
+    image_urls: ["https://images.unsplash.com/photo-1614026480209-cf5a8e0a0a8e?w=400&h=400&fit=crop"], cost_price: 35.00, sale_price: 58.00, unit: "套", weight_kg: 1.2, package_length_cm: 25, package_width_cm: 18, package_height_cm: 5,
     status: "active", applicable_models: ["Toyota Camry", "Toyota Corolla"],
     description: "适用于丰田卡罗拉/凯美瑞的前制动片", created_at: daysAgo(90), updated_at: daysAgo(10),
   },
   {
     id: "p-002", code: "PD002", name: "后制动片", name_en: "Rear Brake Pad", oem_number: "OEM-TOYOTA-002",
     category_id: "cat-1-1", category_name: "刹车片", brand: "Bosch",
-    image_urls: ["https://images.unsplash.com/photo-1611821065448-6f7d2c5b5b5b?w=400&h=400&fit=crop"], cost_price: 32.00, sale_price: 52.00, unit: "套", weight_kg: 1.0,
+    image_urls: ["https://images.unsplash.com/photo-1611821065448-6f7d2c5b5b5b?w=400&h=400&fit=crop"], cost_price: 32.00, sale_price: 52.00, unit: "套", weight_kg: 1.0, package_length_cm: 22, package_width_cm: 16, package_height_cm: 4,
     status: "active", applicable_models: ["Toyota Camry"], created_at: daysAgo(85), updated_at: daysAgo(8),
   },
   {
     id: "p-003", code: "PD003", name: "机油滤芯", name_en: "Oil Filter", oem_number: "OEM-HONDA-003",
     category_id: "cat-2", category_name: "发动机配件", brand: "Mann",
-    image_urls: ["https://images.unsplash.com/photo-1621697789032-45ad6dba37e2?w=400&h=400&fit=crop"], cost_price: 12.00, sale_price: 22.00, unit: "个", weight_kg: 0.3,
+    image_urls: ["https://images.unsplash.com/photo-1621697789032-45ad6dba37e2?w=400&h=400&fit=crop"], cost_price: 12.00, sale_price: 22.00, unit: "个", weight_kg: 0.3, package_length_cm: 12, package_width_cm: 8, package_height_cm: 3,
     status: "active", applicable_models: ["Honda Civic", "Honda Accord"],
     created_at: daysAgo(80), updated_at: daysAgo(5),
   },
   {
     id: "p-004", code: "PD004", name: "气门室垫片", name_en: "Valve Cover Gasket", oem_number: "OEM-VW-004",
     category_id: "cat-3", category_name: "密封件", brand: "Elring",
-    image_urls: [], cost_price: 18.00, sale_price: 35.00, unit: "个", weight_kg: 0.2,
+    image_urls: [], cost_price: 18.00, sale_price: 35.00, unit: "个", weight_kg: 0.2, package_length_cm: 15, package_width_cm: 10, package_height_cm: 2,
     status: "active", applicable_models: ["VW Golf", "Audi A4"],
     created_at: daysAgo(75), updated_at: daysAgo(12),
   },
   {
     id: "p-005", code: "PD005", name: "深沟球轴承6203", name_en: "Deep Groove Ball Bearing 6203",
     oem_number: "OEM-SKF-005", category_id: "cat-4", category_name: "轴承", brand: "SKF",
-    image_urls: [], cost_price: 8.00, sale_price: 16.00, unit: "个", weight_kg: 0.15,
+    image_urls: [], cost_price: 8.00, sale_price: 16.00, unit: "个", weight_kg: 0.15, package_length_cm: 8, package_width_cm: 8, package_height_cm: 2,
     status: "active", applicable_models: ["Universal"], created_at: daysAgo(70), updated_at: daysAgo(15),
   },
   {
     id: "p-006", code: "PD006", name: "发电机", name_en: "Alternator", oem_number: "OEM-BOSCH-006",
     category_id: "cat-5", category_name: "电气系统", brand: "Bosch",
-    image_urls: [], cost_price: 120.00, sale_price: 195.00, unit: "台", weight_kg: 5.5,
+    image_urls: [], cost_price: 120.00, sale_price: 195.00, unit: "台", weight_kg: 5.5, package_length_cm: 35, package_width_cm: 25, package_height_cm: 20,
     status: "active", applicable_models: ["BMW 3 Series", "BMW 5 Series"],
     created_at: daysAgo(65), updated_at: daysAgo(20),
   },
   {
     id: "p-007", code: "PD007", name: "刹车盘", name_en: "Brake Disc", oem_number: "OEM-BREMBO-007",
     category_id: "cat-1-2", category_name: "刹车盘", brand: "Brembo",
-    image_urls: [], cost_price: 45.00, sale_price: 78.00, unit: "个", weight_kg: 4.5,
+    image_urls: [], cost_price: 45.00, sale_price: 78.00, unit: "个", weight_kg: 4.5, package_length_cm: 30, package_width_cm: 30, package_height_cm: 5,
     status: "active", applicable_models: ["Mercedes C-Class"],
     created_at: daysAgo(60), updated_at: daysAgo(18),
   },
   {
     id: "p-008", code: "PD008", name: "空气滤芯", name_en: "Air Filter", oem_number: "OEM-MANN-008",
     category_id: "cat-2", category_name: "发动机配件", brand: "Mann",
-    image_urls: [], cost_price: 10.00, sale_price: 19.00, unit: "个", weight_kg: 0.25,
+    image_urls: [], cost_price: 10.00, sale_price: 19.00, unit: "个", weight_kg: 0.25, package_length_cm: 25, package_width_cm: 15, package_height_cm: 3,
     status: "active", applicable_models: ["VW Passat", "Audi A6"],
     created_at: daysAgo(55), updated_at: daysAgo(7),
   },
   {
     id: "p-009", code: "PD009", name: "火花塞", name_en: "Spark Plug", oem_number: "OEM-NGK-009",
     category_id: "cat-2", category_name: "发动机配件", brand: "NGK",
-    image_urls: [], cost_price: 6.00, sale_price: 12.00, unit: "个", weight_kg: 0.05,
+    image_urls: [], cost_price: 6.00, sale_price: 12.00, unit: "个", weight_kg: 0.05, package_length_cm: 10, package_width_cm: 5, package_height_cm: 2,
     status: "active", applicable_models: ["Universal"],
     created_at: daysAgo(50), updated_at: daysAgo(3),
   },
   {
     id: "p-010", code: "PD010", name: "起动机", name_en: "Starter Motor", oem_number: "OEM-VALEO-010",
     category_id: "cat-5", category_name: "电气系统", brand: "Valeo",
-    image_urls: [], cost_price: 95.00, sale_price: 165.00, unit: "台", weight_kg: 4.2,
+    image_urls: [], cost_price: 95.00, sale_price: 165.00, unit: "台", weight_kg: 4.2, package_length_cm: 32, package_width_cm: 22, package_height_cm: 18,
     status: "active", applicable_models: ["Peugeot 308", "Citroen C4"],
     created_at: daysAgo(45), updated_at: daysAgo(25),
   },
@@ -613,11 +613,11 @@ export const useStore = create<StoreState>()(
           removeItem: () => {},
         } as any;
       }),
-      version: 3,
+      version: 4,
       skipHydration: false,
       // 版本不匹配时直接重置为初始数据
       migrate: (_persistedState: any, version: number) => {
-        if (version < 3) {
+        if (version < 4) {
           return { ...initialState };
         }
         return _persistedState;

@@ -98,7 +98,7 @@ export default function ProductsPage() {
         ...data, category_name: cat?.name,
         cost_price: data.cost_price || 0, sale_price: data.sale_price || 0,
         unit: data.unit || "个", status: data.status || "active",
-        image_urls: [], applicable_models: data.applicable_models || [],
+        image_urls: data.image_urls || [], applicable_models: data.applicable_models || [],
         created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       } as Product;
       useStore.setState((state) => ({ products: [newProd, ...state.products] }));
@@ -121,22 +121,7 @@ export default function ProductsPage() {
     <div>
       <PageHeader title="产品管理" description={`共 ${filtered.length} 条产品记录`} actions={
         <>
-          <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "产品列表", "产品", [
-            { key: "code", label: "编码" },
-            { key: "name", label: "产品名称" },
-            { key: "name_en", label: "英文名称" },
-            { key: "oem_number", label: "OEM号" },
-            { key: "category_name", label: "分类" },
-            { key: "brand", label: "品牌" },
-            { key: "unit", label: "单位" },
-            { key: "weight_kg", label: "重量(kg)" },
-            { key: "cost_price", label: "成本价" },
-            { key: "sale_price", label: "销售价" },
-            { key: "applicable_models", label: "适用车型" },
-            { key: "status", label: "状态" },
-            { key: "description", label: "描述" },
-            { key: "created_at", label: "创建时间" },
-          ]); }}>导出Excel</ActionButton>
+          <ActionButton icon="export" onClick={async () => { const { exportProductsWithImages } = await import("@/lib/product-excel"); exportProductsWithImages(filtered); }}>导出Excel</ActionButton>
           <ActionButton icon="import" onClick={() => setImportOpen(true)}>导入Excel</ActionButton>
           <ActionButton icon="add" onClick={() => { setEditing(null); setFormOpen(true); }}>新建产品</ActionButton>
         </>
@@ -163,6 +148,26 @@ export default function ProductsPage() {
         onOpenChange={setImportOpen}
         moduleName="产品"
         templateFilename="产品导入模板"
+        fileAccept=".zip,.xlsx,.xls,.csv"
+        extraHint="💡 导出时会生成 ZIP 包（Excel + images/ 文件夹）。导入时上传 ZIP 包可自动还原图片，上传 Excel 则不带图片。"
+        customDownloadTemplate={async () => { const { downloadProductTemplate } = await import("@/lib/product-excel"); downloadProductTemplate(); }}
+        customParse={async (file) => {
+          if (file.name.endsWith(".zip")) {
+            const { parseProductZipFile } = await import("@/lib/product-excel");
+            return await parseProductZipFile(file);
+          } else {
+            // 普通 Excel 文件，用标准解析
+            const { parseExcelFile } = await import("@/lib/excel-utils");
+            const headerMap: Record<string, string> = {
+              "编码": "code", "产品名称": "name", "英文名称": "name_en", "OEM号": "oem_number",
+              "分类": "category_name", "品牌": "brand", "单位": "unit", "重量(kg)": "weight_kg",
+              "包装长(cm)": "package_length_cm", "包装宽(cm)": "package_width_cm", "包装高(cm)": "package_height_cm",
+              "成本价": "cost_price", "销售价": "sale_price", "适用车型": "applicable_models",
+              "状态": "status", "图片文件": "image_files", "描述": "description",
+            };
+            return await parseExcelFile(file, headerMap);
+          }
+        }}
         columns={[
           { key: "code", label: "编码", example: "留空则自动生成" },
           { key: "name", label: "产品名称", required: true, example: "前制动片" },
@@ -172,10 +177,14 @@ export default function ProductsPage() {
           { key: "brand", label: "品牌", example: "Bosch" },
           { key: "unit", label: "单位", required: true, example: "套" },
           { key: "weight_kg", label: "重量(kg)", example: "1.2" },
+          { key: "package_length_cm", label: "包装长(cm)", example: "25" },
+          { key: "package_width_cm", label: "包装宽(cm)", example: "18" },
+          { key: "package_height_cm", label: "包装高(cm)", example: "5" },
           { key: "cost_price", label: "成本价", example: "35.00" },
           { key: "sale_price", label: "销售价", required: true, example: "58.00" },
           { key: "applicable_models", label: "适用车型", example: "Toyota Camry,Corolla" },
           { key: "status", label: "状态", example: "active/discontinued" },
+          { key: "image_files", label: "图片文件", example: "PD001-1.jpg,PD001-2.png" },
           { key: "description", label: "描述", example: "适用于丰田卡罗拉" },
         ]}
         onImport={async (data) => {
@@ -200,13 +209,16 @@ export default function ProductsPage() {
               oem_number: row.oem_number || "",
               category_id: cat?.id, category_name: cat?.name || row.category_name || "",
               brand: row.brand || "",
-              image_urls: [],
+              image_urls: row.image_urls || [],
               cost_price: Number(row.cost_price) || 0,
               sale_price: Number(row.sale_price) || 0,
               unit: row.unit,
               weight_kg: Number(row.weight_kg) || 0,
+              package_length_cm: Number(row.package_length_cm) || 0,
+              package_width_cm: Number(row.package_width_cm) || 0,
+              package_height_cm: Number(row.package_height_cm) || 0,
               status: ["active", "discontinued"].includes(row.status) ? row.status : "active",
-              applicable_models: row.applicable_models ? String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [],
+              applicable_models: row.applicable_models ? (Array.isArray(row.applicable_models) ? row.applicable_models : String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean)) : [],
               description: row.description || "",
               created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
             };
@@ -229,7 +241,7 @@ function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: bool
 
   useEffect(() => {
     if (open) {
-      setForm(product ? { ...product } : { name: "", name_en: "", oem_number: "", category_id: "", brand: "", cost_price: 0, sale_price: 0, unit: "个", weight_kg: 0, status: "active", applicable_models: [], description: "" });
+      setForm(product ? { ...product } : { name: "", name_en: "", oem_number: "", category_id: "", brand: "", cost_price: 0, sale_price: 0, unit: "个", weight_kg: 0, package_length_cm: 0, package_width_cm: 0, package_height_cm: 0, status: "active", applicable_models: [], description: "" });
       setModelInput("");
     }
   }, [open, product]);
@@ -259,6 +271,15 @@ function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: bool
           <Field label="成本价(CNY)"><Input type="number" step="0.01" value={form.cost_price || 0} onChange={(e) => setForm({ ...form, cost_price: Number(e.target.value) })} min={0} /></Field>
           <Field label="销售价(USD)"><Input type="number" step="0.01" value={form.sale_price || 0} onChange={(e) => setForm({ ...form, sale_price: Number(e.target.value) })} min={0} /></Field>
           <Field label="重量(kg)"><Input type="number" step="0.01" value={form.weight_kg || 0} onChange={(e) => setForm({ ...form, weight_kg: Number(e.target.value) })} min={0} /></Field>
+          <Field label="包装尺寸(长×宽×高 cm)">
+            <div className="flex items-center gap-1">
+              <Input type="number" step="0.1" value={form.package_length_cm || 0} onChange={(e) => setForm({ ...form, package_length_cm: Number(e.target.value) })} min={0} placeholder="长" className="text-center" />
+              <span className="text-slate-400 text-xs">×</span>
+              <Input type="number" step="0.1" value={form.package_width_cm || 0} onChange={(e) => setForm({ ...form, package_width_cm: Number(e.target.value) })} min={0} placeholder="宽" className="text-center" />
+              <span className="text-slate-400 text-xs">×</span>
+              <Input type="number" step="0.1" value={form.package_height_cm || 0} onChange={(e) => setForm({ ...form, package_height_cm: Number(e.target.value) })} min={0} placeholder="高" className="text-center" />
+            </div>
+          </Field>
           <Field label="状态">
             <Select value={form.status || "active"} onValueChange={(v) => setForm({ ...form, status: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>

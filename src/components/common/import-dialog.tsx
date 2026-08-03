@@ -27,6 +27,14 @@ interface ImportDialogProps {
   onImport: (data: any[]) => Promise<{ success: number; errors: { row: number; message: string }[] }> | { success: number; errors: { row: number; message: string }[] };
   /** 模板下载文件名 */
   templateFilename?: string;
+  /** 自定义文件解析函数（支持ZIP等格式） */
+  customParse?: (file: File) => Promise<any[]>;
+  /** 自定义接受的文件类型 */
+  fileAccept?: string;
+  /** 自定义模板下载函数 */
+  customDownloadTemplate?: () => Promise<void>;
+  /** 额外提示文本（显示在上传区域下方） */
+  extraHint?: string;
 }
 
 export function ImportDialog({
@@ -36,11 +44,16 @@ export function ImportDialog({
   columns,
   onImport,
   templateFilename,
+  customParse,
+  fileAccept,
+  customDownloadTemplate,
+  extraHint,
 }: ImportDialogProps) {
   const [step, setStep] = useState<"upload" | "preview" | "result">("upload");
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<{ success: number; errors: { row: number; message: string }[] } | null>(null);
   const [parseError, setParseError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,24 +88,37 @@ export function ImportDialog({
     if (!file) return;
     setParseError("");
     setFileName(file.name);
+    setParsing(true);
 
     try {
-      const { parseExcelFile } = await import("@/lib/excel-utils");
-      const data = await parseExcelFile(file, headerMap);
+      let data: any[];
+      if (customParse) {
+        data = await customParse(file);
+      } else {
+        const { parseExcelFile } = await import("@/lib/excel-utils");
+        data = await parseExcelFile(file, headerMap);
+      }
       if (data.length === 0) {
-        setParseError("Excel 文件为空或没有有效数据");
+        setParseError("文件为空或没有有效数据");
+        setParsing(false);
         return;
       }
       setParsedData(data);
       setStep("preview");
     } catch (err: any) {
       setParseError(err.message || "文件解析失败");
+    } finally {
+      setParsing(false);
     }
   };
 
   const handleDownloadTemplate = async () => {
-    const { downloadTemplate } = await import("@/lib/excel-utils");
-    downloadTemplate(templateFilename || moduleName, columns);
+    if (customDownloadTemplate) {
+      await customDownloadTemplate();
+    } else {
+      const { downloadTemplate } = await import("@/lib/excel-utils");
+      downloadTemplate(templateFilename || moduleName, columns);
+    }
   };
 
   const handleImport = async () => {
@@ -144,8 +170,11 @@ export function ImportDialog({
             </div>
 
             <div
-              className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center hover:border-[#38BDF8] hover:bg-sky-50/40 transition-colors cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "border-2 border-dashed rounded-md p-8 text-center transition-colors cursor-pointer",
+                parsing ? "border-[#38BDF8] bg-sky-50/40" : "border-slate-300 hover:border-[#38BDF8] hover:bg-sky-50/40",
+              )}
+              onClick={() => !parsing && fileInputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#38BDF8]", "bg-sky-50/40"); }}
               onDragLeave={(e) => { e.currentTarget.classList.remove("border-[#38BDF8]", "bg-sky-50/40"); }}
               onDrop={(e) => {
@@ -161,21 +190,36 @@ export function ImportDialog({
                 }
               }}
             >
-              <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-              <div className="text-sm text-slate-600 mb-1">
-                点击或拖拽文件到此处上传
-              </div>
-              <div className="text-xs text-slate-400">
-                支持 .xlsx / .xls / .csv 文件
-              </div>
+              {parsing ? (
+                <>
+                  <div className="inline-block animate-spin h-8 w-8 border-3 border-[#38BDF8] border-t-transparent rounded-full mb-2" />
+                  <div className="text-sm text-[#38BDF8] font-medium">正在解析文件...</div>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                  <div className="text-sm text-slate-600 mb-1">
+                    点击或拖拽文件到此处上传
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {fileAccept?.includes("zip") ? "支持 .zip / .xlsx / .xls / .csv 文件" : "支持 .xlsx / .xls / .csv 文件"}
+                  </div>
+                </>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept={fileAccept || ".xlsx,.xls,.csv"}
                 className="hidden"
                 onChange={handleFileSelect}
               />
             </div>
+
+            {extraHint && (
+              <div className="bg-sky-50 border border-sky-200 rounded-md p-2.5 text-xs text-sky-800">
+                {extraHint}
+              </div>
+            )}
 
             {fileName && (
               <div className="text-xs text-slate-600 flex items-center gap-1.5">

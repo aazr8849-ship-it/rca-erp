@@ -68,6 +68,7 @@ export default function ProductDetailPage() {
             <InfoItem label="品牌" value={product.brand || "-"} />
             <InfoItem label="单位" value={product.unit} />
             <InfoItem label="重量" value={product.weight_kg ? `${product.weight_kg} kg` : "-"} />
+            <InfoItem label="包装尺寸" value={(product.package_length_cm || product.package_width_cm || product.package_height_cm) ? `${product.package_length_cm || 0} × ${product.package_width_cm || 0} × ${product.package_height_cm || 0} cm` : "-"} />
             <InfoItem label="状态" value={<StatusBadge status={product.status} />} />
             <InfoItem label="适用车型" value={<div className="flex flex-wrap gap-1">{(product.applicable_models || []).map((m, i) => <span key={i} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{m}</span>)}</div>} />
             {product.description && <InfoItem label="产品描述" full value={<span className="text-xs">{product.description}</span>} />}

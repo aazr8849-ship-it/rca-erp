@@ -112,6 +112,9 @@ export interface Product {
   sale_price: number;
   unit: string;
   weight_kg?: number;
+  package_length_cm?: number;  // 包装长度(cm)
+  package_width_cm?: number;   // 包装宽度(cm)
+  package_height_cm?: number;  // 包装高度(cm)
   status: "active" | "discontinued";
   applicable_models?: string[];
   description?: string;
