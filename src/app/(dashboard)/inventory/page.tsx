@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Warehouse, ArrowDownToLine, ArrowUpFromLine, Snowflake, Settings2 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/common/page-header";
+import { PageHeader, ActionButton } from "@/components/common/page-header";
 import { FilterBar } from "@/components/common/filter-bar";
 import { SearchInput } from "@/components/common/search-input";
 import { GenericDataTable, type Column } from "@/components/common/data-table";
@@ -97,7 +97,7 @@ export default function InventoryPage() {
           const exportData = tab === "stock" ? filteredInventory : (tab === "inbound" ? inboundMovements : outboundMovements);
           const fileName = tab === "stock" ? "库存查询" : (tab === "inbound" ? "入库记录" : "出库记录");
           if (tab === "stock") {
-            exportToExcel(exportData, fileName, "库存", [
+            exportToExcel(exportData as any[], fileName, "库存", [
               { key: "product_code", label: "产品编码" },
               { key: "product_name", label: "产品名称" },
               { key: "warehouse_name", label: "仓库" },
@@ -107,7 +107,7 @@ export default function InventoryPage() {
               { key: "updated_at", label: "更新时间" },
             ]);
           } else {
-            exportToExcel(exportData, fileName, tab === "inbound" ? "入库" : "出库", [
+            exportToExcel(exportData as any[], fileName, tab === "inbound" ? "入库" : "出库", [
               { key: "movement_type", label: "类型" },
               { key: "product_name", label: "产品" },
               { key: "warehouse_name", label: "仓库" },

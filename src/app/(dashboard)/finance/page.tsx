@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/common/page-header";
+import { PageHeader, ActionButton } from "@/components/common/page-header";
 import { FilterBar } from "@/components/common/filter-bar";
 import { SearchInput } from "@/components/common/search-input";
 import { GenericDataTable, type Column } from "@/components/common/data-table";
@@ -81,7 +81,7 @@ export default function FinancePage() {
           const data = tab === "receivables" ? filteredRec : filteredPay;
           const fileName = tab === "receivables" ? "应收账款" : "应付账款";
           if (tab === "receivables") {
-            exportToExcel(data, fileName, "应收", [
+            exportToExcel(data as any[], fileName, "应收", [
               { key: "code", label: "应收编号" },
               { key: "customer_name", label: "客户" },
               { key: "order_code", label: "关联订单" },
@@ -94,7 +94,7 @@ export default function FinancePage() {
               { key: "created_at", label: "创建时间" },
             ]);
           } else {
-            exportToExcel(data, fileName, "应付", [
+            exportToExcel(data as any[], fileName, "应付", [
               { key: "code", label: "应付编号" },
               { key: "supplier_name", label: "供应商" },
               { key: "category", label: "类别" },
