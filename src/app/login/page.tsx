@@ -153,7 +153,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4" method="post" action="#">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">邮箱账号</label>
                 <div className="relative">
