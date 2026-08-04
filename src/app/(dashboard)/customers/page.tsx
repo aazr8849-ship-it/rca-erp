@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Pencil, Trash2 } from "lucide-react";
@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Customer } from "@/lib/types";
 import { formatDate, formatCurrency, generateCode } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCustomers, createCustomer, updateCustomer, deleteCustomer,
 } from "@/lib/api/customers";
@@ -376,8 +376,6 @@ function CustomerFormDialog({ open, onOpenChange, customer, onSave }: {
     </Dialog>
   );
 }
-
-import { useEffect } from "react";
 
 function Field({ label, required, full, children }: { label: string; required?: boolean; full?: boolean; children: React.ReactNode }) {
   return (
