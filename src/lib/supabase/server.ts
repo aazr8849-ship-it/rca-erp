@@ -3,10 +3,10 @@ import { cookies } from "next/headers";
 
 /**
  * 服务端 Supabase 客户端（用于 Server Components 和 API Routes）
- * 使用 anon/publishable key，受 RLS 限制
+ * 使用 publishable key (anon key)，受 RLS 限制
  */
-export function createClient() {
-  const cookieStore = cookies();
+export async function createClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,7 +22,6 @@ export function createClient() {
             );
           } catch {
             // 在 Server Component 中调用 setAll 会抛错（只读 cookies）
-            // 可以忽略，因为 middleware 会处理 session 刷新
           }
         },
       },
