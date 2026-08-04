@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,32 +28,13 @@ export default function LoginPage() {
   const supabaseEnabled = useSupabase();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("admin@rca-erp.com");
+  const [password, setPassword] = useState("admin123");
+  const emailRef = useRef<HTMLInputElement>(null);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = {
-    register: ({ target }: any) => ({}),
-    handleSubmit: (fn: any) => (e: any) => {
-      e?.preventDefault?.();
-      const form = e?.target as HTMLFormElement;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-      fn(data);
-    },
-    setValue: (name: string, value: string) => {
-      const input = document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
-      if (input) input.value = value;
-    },
-    formState: { errors: {} },
-  };
-
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    const email = data.email || (document.querySelector('input[type=email]') as HTMLInputElement)?.value;
-    const password = data.password || (document.querySelector('input[type=password]') as HTMLInputElement)?.value;
 
     if (supabaseEnabled) {
       // Supabase 认证模式
@@ -68,6 +49,7 @@ export default function LoginPage() {
         router.push("/");
         return;
       }
+      toast.error("登录失败");
     } else {
       // Mock 模式
       await new Promise((r) => setTimeout(r, 600));
@@ -83,10 +65,8 @@ export default function LoginPage() {
   };
 
   const quickFill = (acc: (typeof DEMO_ACCOUNTS)[number]) => {
-    const emailInput = document.querySelector('input[type=email]') as HTMLInputElement;
-    const passInput = document.querySelector('input[type=password]') as HTMLInputElement;
-    if (emailInput) emailInput.value = acc.email;
-    if (passInput) passInput.value = acc.password;
+    setEmail(acc.email);
+    setPassword(acc.password);
   };
 
   return (
@@ -153,17 +133,19 @@ export default function LoginPage() {
               )}
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4" method="post" action="#">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">邮箱账号</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
+                    ref={emailRef}
                     type="email"
-                    name="email"
-                    defaultValue="admin@rca-erp.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@rca-erp.com"
                     className="w-full pl-9 pr-3 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
+                    required
                   />
                 </div>
               </div>
@@ -174,10 +156,11 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
                     type={showPassword ? "text" : "password"}
-                    name="password"
-                    defaultValue="admin123"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="请输入密码"
                     className="w-full pl-9 pr-10 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
+                    required
                   />
                   <button
                     type="button"
@@ -224,6 +207,11 @@ export default function LoginPage() {
                   </button>
                 ))}
               </div>
+              {supabaseEnabled && (
+                <p className="mt-3 text-[11px] text-amber-600 text-center">
+                  ⚠️ 需要在 Supabase → Authentication → Users 中创建用户才能登录
+                </p>
+              )}
               {!supabaseEnabled && (
                 <p className="mt-3 text-[11px] text-gray-400 text-center">
                   提示：默认密码为 <code className="px-1 bg-gray-100 rounded">用户名 + 123</code>
