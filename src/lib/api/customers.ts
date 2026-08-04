@@ -4,6 +4,14 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Customer } from "@/lib/types";
 
+/** 检查 Supabase 是否可用 */
+function checkSupabase() {
+  if (!supabase) {
+    throw new Error("Supabase 未配置，请检查环境变量");
+  }
+  return supabase;
+}
+
 export async function fetchCustomers(params: {
   page?: number;
   pageSize?: number;
@@ -12,11 +20,12 @@ export async function fetchCustomers(params: {
   status?: string;
   country?: string;
 } = {}): Promise<{ data: Customer[]; total: number }> {
+  const client = checkSupabase();
   const { page = 1, pageSize = 20, search, level, status, country } = params;
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
-  let query = supabase
+  let query = client
     .from("customers")
     .select("*", { count: "exact" })
     .is("deleted_at", null);
@@ -38,7 +47,8 @@ export async function fetchCustomers(params: {
 }
 
 export async function fetchCustomerById(id: string): Promise<Customer | null> {
-  const { data, error } = await supabase
+  const client = checkSupabase();
+  const { data, error } = await client
     .from("customers")
     .select("*")
     .eq("id", id)
@@ -51,8 +61,9 @@ export async function fetchCustomerById(id: string): Promise<Customer | null> {
 export async function createCustomer(
   input: Partial<Customer>,
 ): Promise<Customer> {
+  const client = checkSupabase();
   const code = await generateSupabaseCode("customers", "CU");
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("customers")
     .insert({ ...input, code })
     .select()
@@ -65,7 +76,8 @@ export async function updateCustomer(
   id: string,
   input: Partial<Customer>,
 ): Promise<Customer> {
-  const { data, error } = await supabase
+  const client = checkSupabase();
+  const { data, error } = await client
     .from("customers")
     .update({ ...input, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -76,7 +88,8 @@ export async function updateCustomer(
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  const { error } = await supabase
+  const client = checkSupabase();
+  const { error } = await client
     .from("customers")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
@@ -87,11 +100,12 @@ export async function generateSupabaseCode(
   table: string,
   prefix: string,
 ): Promise<string> {
+  const client = checkSupabase();
   const today = new Date();
   const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
   const pattern = `${prefix}${dateStr}%`;
 
-  const { count, error } = await supabase
+  const { count, error } = await client
     .from(table)
     .select("*", { count: "exact", head: true })
     .like("code", pattern);

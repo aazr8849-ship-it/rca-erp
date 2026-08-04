@@ -33,7 +33,8 @@ import {
 const useSupabase = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return !!(url && key && !key.includes("REPLACE_WITH"));
+  // 检查环境变量是否存在且不是占位符
+  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://"));
 };
 
 export default function CustomersPage() {
@@ -54,13 +55,18 @@ export default function CustomersPage() {
   const [importOpen, setImportOpen] = useState(false);
 
   // ====== Supabase 模式 ======
-  const { data: supabaseData, isLoading: supabaseLoading } = useQuery({
+  const { data: supabaseData, isLoading: supabaseLoading, error: supabaseError } = useQuery({
     queryKey: ["customers", { page, pageSize, search, levelFilter, statusFilter, countryFilter }],
     queryFn: () => fetchCustomers({
       page, pageSize, search, level: levelFilter, status: statusFilter, country: countryFilter,
     }),
     enabled: supabaseEnabled,
+    retry: 1, // 失败只重试1次
+    staleTime: 30 * 1000, // 30秒内不重新请求
   });
+
+  // 如果 Supabase 出错，自动降级到 Mock 模式
+  const useMockMode = !supabaseEnabled || !!supabaseError;
 
   // ====== Mock 模式（降级） ======
   const mockFiltered = useMemo(() => {
@@ -78,14 +84,14 @@ export default function CustomersPage() {
     return list;
   }, [mockCustomers, search, levelFilter, statusFilter, countryFilter]);
 
-  // 统一数据源
-  const displayData = supabaseEnabled ? (supabaseData?.data || []) : mockFiltered;
-  const total = supabaseEnabled ? (supabaseData?.total || 0) : mockFiltered.length;
-  const loading = supabaseEnabled ? supabaseLoading : false;
+  // 统一数据源：Supabase 出错或未配置时用 Mock
+  const displayData = useMockMode ? mockFiltered : (supabaseData?.data || []);
+  const total = useMockMode ? mockFiltered.length : (supabaseData?.total || 0);
+  const loading = !useMockMode && supabaseLoading;
 
   // ====== CRUD 操作 ======
   const handleSave = async (data: Partial<Customer>) => {
-    if (supabaseEnabled) {
+    if (!useMockMode) {
       try {
         if (editingCustomer) {
           await updateCustomer(editingCustomer.id, data);
@@ -126,7 +132,7 @@ export default function CustomersPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    if (supabaseEnabled) {
+    if (!useMockMode) {
       try {
         await deleteCustomer(deleteTarget.id);
         queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -190,9 +196,9 @@ export default function CustomersPage() {
       <PageHeader
         title="客户管理"
         description={
-          supabaseEnabled
-            ? `共 ${total} 条客户记录 · 已连接 Supabase`
-            : `共 ${total} 条客户记录 · Mock 模式（未配置 Supabase）`
+          useMockMode
+            ? `共 ${total} 条客户记录 · Mock 模式（未连接数据库）`
+            : `共 ${total} 条客户记录 · 已连接 Supabase`
         }
         actions={
           <>
@@ -266,7 +272,7 @@ export default function CustomersPage() {
           let success = 0;
           for (const row of data) {
             try {
-              if (supabaseEnabled) {
+              if (!useMockMode) {
                 await createCustomer({
                   name: row.name, name_en: row.name_en, contact_person: row.contact_person,
                   contact_email: row.contact_email, contact_phone: row.contact_phone,
@@ -296,7 +302,7 @@ export default function CustomersPage() {
               errors.push({ row: data.indexOf(row) + 2, message: err.message || "导入失败" });
             }
           }
-          if (supabaseEnabled) queryClient.invalidateQueries({ queryKey: ["customers"] });
+          if (!useMockMode) queryClient.invalidateQueries({ queryKey: ["customers"] });
           return { success, errors };
         }}
       />
