@@ -22,10 +22,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import type { Product } from "@/lib/types";
 import { formatCurrency, formatDate, generateCode } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchProducts, createProduct, updateProduct, deleteProduct,
+  uploadProductImage, addProductImage, removeProductImage, fetchCategories,
+} from "@/lib/api/products";
+
+// 检测是否配置了 Supabase
+const useSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://") && key.length > 50);
+};
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { products, categories, inventory, addAuditLog } = useStore();
+  const queryClient = useQueryClient();
+  const supabaseEnabled = useSupabase();
+  const { products: mockProducts, categories: mockCategories, inventory, addAuditLog } = useStore();
+
   const [search, setSearch] = useState("");
   const [exactMatch, setExactMatch] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("__all__");
@@ -37,8 +52,30 @@ export default function ProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [importOpen, setImportOpen] = useState(false);
 
-  const filtered = useMemo(() => {
-    let list = products.filter((p) => !p.deleted_at);
+  // Supabase 查询
+  const { data: supabaseData, isLoading: supabaseLoading, error: supabaseError } = useQuery({
+    queryKey: ["products", { page, pageSize, search, exactMatch, categoryFilter, statusFilter }],
+    queryFn: () => fetchProducts({
+      page, pageSize, search, exactMatch, categoryId: categoryFilter, status: statusFilter,
+    }),
+    enabled: supabaseEnabled,
+    retry: 1,
+    staleTime: 30 * 1000,
+  });
+
+  // 分类
+  const { data: supabaseCategories } = useQuery({
+    queryKey: ["product-categories"],
+    queryFn: fetchCategories,
+    enabled: supabaseEnabled,
+  });
+
+  const useMockMode = !supabaseEnabled || !!supabaseError;
+  const categories = useMockMode ? mockCategories : (supabaseCategories || []);
+
+  // Mock 模式过滤
+  const mockFiltered = useMemo(() => {
+    let list = mockProducts.filter((p) => !p.deleted_at);
     if (search) {
       if (exactMatch) {
         list = list.filter((p) => p.oem_number === search);
@@ -47,12 +84,14 @@ export default function ProductsPage() {
         list = list.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || (p.oem_number || "").toLowerCase().includes(q));
       }
     }
-    if (categoryFilter && categoryFilter !== "__all__") list = list.filter((p) => p.category_id === categoryFilter);
-    if (statusFilter && statusFilter !== "__all__") list = list.filter((p) => p.status === statusFilter);
+    if (categoryFilter !== "__all__") list = list.filter((p) => p.category_id === categoryFilter);
+    if (statusFilter !== "__all__") list = list.filter((p) => p.status === statusFilter);
     return list;
-  }, [products, search, exactMatch, categoryFilter, statusFilter]);
+  }, [mockProducts, search, exactMatch, categoryFilter, statusFilter]);
 
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const displayData = useMockMode ? mockFiltered : (supabaseData?.data || []);
+  const total = useMockMode ? mockFiltered.length : (supabaseData?.total || 0);
+  const loading = !useMockMode && supabaseLoading;
 
   const getStock = (productId: string) => inventory.find((i) => i.product_id === productId);
 
@@ -86,63 +125,87 @@ export default function ProductsPage() {
     ) },
   ];
 
-  const handleSave = (data: Partial<Product>) => {
-    const cat = categories.find((c) => c.id === data.category_id);
-    if (editing) {
-      useStore.setState((state) => ({ products: state.products.map((p) => p.id === editing.id ? { ...p, ...data, category_name: cat?.name, updated_at: new Date().toISOString() } : p) }));
-      addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "products", action: "update", record_id: editing.id, record_code: editing.code, description: `更新产品 ${editing.name} (${editing.code})` });
-      toast.success("产品信息已更新");
+  const handleSave = async (data: Partial<Product>) => {
+    if (!useMockMode) {
+      try {
+        const cat = categories.find((c) => c.id === data.category_id);
+        const payload = { ...data, category_name: cat?.name };
+        if (editing) {
+          await updateProduct(editing.id, payload);
+          toast.success("产品信息已更新");
+        } else {
+          await createProduct(payload);
+          toast.success("产品创建成功");
+        }
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      } catch (err: any) {
+        toast.error(err.message || "操作失败");
+      }
     } else {
-      const newProd: Product = {
-        id: crypto.randomUUID(), code: generateCode("PD"),
-        ...data, category_name: cat?.name,
-        cost_price: data.cost_price || 0, sale_price: data.sale_price || 0,
-        unit: data.unit || "个", status: data.status || "active",
-        image_urls: data.image_urls || [], applicable_models: data.applicable_models || [],
-        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-      } as Product;
-      useStore.setState((state) => ({ products: [newProd, ...state.products] }));
-      addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "products", action: "create", record_id: newProd.id, record_code: newProd.code, after_data: newProd as any, description: `创建产品 ${newProd.name} (${newProd.code})` });
-      toast.success("产品创建成功");
+      const cat = categories.find((c) => c.id === data.category_id);
+      if (editing) {
+        useStore.setState((state) => ({ products: state.products.map((p) => p.id === editing.id ? { ...p, ...data, category_name: cat?.name, updated_at: new Date().toISOString() } : p) }));
+        toast.success("产品信息已更新");
+      } else {
+        const newProd: Product = {
+          id: crypto.randomUUID(), code: generateCode("PD"),
+          ...data, category_name: cat?.name,
+          cost_price: data.cost_price || 0, sale_price: data.sale_price || 0,
+          unit: data.unit || "个", status: data.status || "active",
+          image_urls: data.image_urls || [], applicable_models: data.applicable_models || [],
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        } as Product;
+        useStore.setState((state) => ({ products: [newProd, ...state.products] }));
+        toast.success("产品创建成功");
+      }
     }
     setFormOpen(false); setEditing(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    const now = new Date().toISOString();
-    useStore.setState((state) => ({ products: state.products.map((p) => p.id === deleteTarget.id ? { ...p, deleted_at: now } : p) }));
-    addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "products", action: "delete", record_id: deleteTarget.id, record_code: deleteTarget.code, description: `删除产品 ${deleteTarget.name} (${deleteTarget.code})` });
-    toast.success("产品已删除");
+    if (!useMockMode) {
+      try {
+        await deleteProduct(deleteTarget.id);
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        toast.success("产品已删除");
+      } catch (err: any) { toast.error(err.message || "删除失败"); }
+    } else {
+      const now = new Date().toISOString();
+      useStore.setState((state) => ({ products: state.products.map((p) => p.id === deleteTarget.id ? { ...p, deleted_at: now } : p) }));
+      toast.success("产品已删除");
+    }
     setDeleteTarget(null);
   };
 
   return (
     <div>
-      <PageHeader title="产品管理" description={`共 ${filtered.length} 条产品记录`} actions={
+      <PageHeader title="产品管理" description={
+        useMockMode ? `共 ${total} 条产品记录 · Mock 模式` : `共 ${total} 条产品记录 · 已连接 Supabase`
+      } actions={
         <>
-          <ActionButton icon="export" onClick={async () => { const { exportProductsWithImages } = await import("@/lib/product-excel"); exportProductsWithImages(filtered); }}>导出Excel</ActionButton>
+          <ActionButton icon="export" onClick={async () => { const { exportProductsWithImages } = await import("@/lib/product-excel"); exportProductsWithImages(displayData); }}>导出Excel</ActionButton>
           <ActionButton icon="import" onClick={() => setImportOpen(true)}>导入Excel</ActionButton>
           <ActionButton icon="add" onClick={() => { setEditing(null); setFormOpen(true); }}>新建产品</ActionButton>
         </>
       } />
       <FilterBar onReset={() => { setSearch(""); setExactMatch(false); setCategoryFilter("__all__"); setStatusFilter("__all__"); setPage(1); }}>
-        <SearchInput value={search} onChange={setSearch} placeholder="搜索产品名/OEM号..." className="w-64" />
+        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="搜索产品名/OEM号..." className="w-64" />
         <div className="flex items-center gap-1.5 text-xs text-gray-600">
           <Switch checked={exactMatch} onCheckedChange={setExactMatch} />
           <span>OEM精确匹配</span>
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
           <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="全部分类" /></SelectTrigger>
           <SelectContent><SelectItem value="__all__">全部分类</SelectItem>{categories.filter((c) => !c.parent_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
           <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="全部状态" /></SelectTrigger>
           <SelectContent><SelectItem value="__all__">全部状态</SelectItem><SelectItem value="active">在售</SelectItem><SelectItem value="discontinued">停产</SelectItem></SelectContent>
         </Select>
       </FilterBar>
-      <GenericDataTable data={paged} columns={columns} pagination={{ page, pageSize, total: filtered.length, onPageChange: setPage, onPageSizeChange: setPageSize }} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/products/${r.id}`)} emptyTitle="暂无产品" />
-      <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} onSave={handleSave} />
+      <GenericDataTable data={displayData} columns={columns} loading={loading} pagination={{ page, pageSize, total, onPageChange: setPage, onPageSizeChange: setPageSize }} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/products/${r.id}`)} emptyTitle="暂无产品" />
+      <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} onSave={handleSave} categories={categories} useMockMode={useMockMode} />
       <ImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
@@ -156,7 +219,6 @@ export default function ProductsPage() {
             const { parseProductZipFile } = await import("@/lib/product-excel");
             return await parseProductZipFile(file);
           } else {
-            // 普通 Excel 文件，用标准解析
             const { parseExcelFile } = await import("@/lib/excel-utils");
             const headerMap: Record<string, string> = {
               "编码": "code", "产品名称": "name", "英文名称": "name_en", "OEM号": "oem_number",
@@ -190,42 +252,49 @@ export default function ProductsPage() {
         onImport={async (data) => {
           const errors: { row: number; message: string }[] = [];
           let success = 0;
-          const existingCodes = new Set(useStore.getState().products.map((p) => p.code));
-
-          data.forEach((row, idx) => {
-            if (!row.name) { errors.push({ row: idx + 2, message: `第${idx + 2}行：产品名称不能为空` }); return; }
-            if (!row.unit) { errors.push({ row: idx + 2, message: `第${idx + 2}行：单位不能为空` }); return; }
-            if (!row.sale_price) { errors.push({ row: idx + 2, message: `第${idx + 2}行：销售价不能为空` }); return; }
-
-            const code = row.code || generateCode("PD");
-            if (existingCodes.has(code)) { errors.push({ row: idx + 2, message: `第${idx + 2}行：编码 ${code} 已存在，已跳过` }); return; }
-            existingCodes.add(code);
-
-            const cat = useStore.getState().categories.find((c) => c.name === row.category_name);
-
-            const newProd: Product = {
-              id: crypto.randomUUID(), code,
-              name: row.name, name_en: row.name_en || "",
-              oem_number: row.oem_number || "",
-              category_id: cat?.id, category_name: cat?.name || row.category_name || "",
-              brand: row.brand || "",
-              image_urls: row.image_urls || [],
-              cost_price: Number(row.cost_price) || 0,
-              sale_price: Number(row.sale_price) || 0,
-              unit: row.unit,
-              weight_kg: Number(row.weight_kg) || 0,
-              package_length_cm: Number(row.package_length_cm) || 0,
-              package_width_cm: Number(row.package_width_cm) || 0,
-              package_height_cm: Number(row.package_height_cm) || 0,
-              status: ["active", "discontinued"].includes(row.status) ? row.status : "active",
-              applicable_models: row.applicable_models ? (Array.isArray(row.applicable_models) ? row.applicable_models : String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean)) : [],
-              description: row.description || "",
-              created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-            };
-            useStore.setState((state) => ({ products: [newProd, ...state.products] }));
-            addAuditLog({ user_id: "u-admin", user_name: "管理员", module: "products", action: "create", record_id: newProd.id, record_code: newProd.code, after_data: newProd as any, description: `Excel导入创建产品 ${newProd.name} (${newProd.code})` });
-            success++;
-          });
+          for (const row of data) {
+            try {
+              if (!row.name) { errors.push({ row: data.indexOf(row) + 2, message: "产品名称不能为空" }); continue; }
+              if (!row.unit) { errors.push({ row: data.indexOf(row) + 2, message: "单位不能为空" }); continue; }
+              if (!useMockMode) {
+                const cat = categories.find((c) => c.name === row.category_name);
+                await createProduct({
+                  name: row.name, name_en: row.name_en, oem_number: row.oem_number,
+                  category_id: cat?.id, category_name: cat?.name || row.category_name,
+                  brand: row.brand, image_urls: row.image_urls || [],
+                  cost_price: Number(row.cost_price) || 0, sale_price: Number(row.sale_price) || 0,
+                  unit: row.unit, weight_kg: Number(row.weight_kg) || 0,
+                  package_length_cm: Number(row.package_length_cm) || 0,
+                  package_width_cm: Number(row.package_width_cm) || 0,
+                  package_height_cm: Number(row.package_height_cm) || 0,
+                  status: row.status || "active",
+                  applicable_models: row.applicable_models ? (Array.isArray(row.applicable_models) ? row.applicable_models : String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean)) : [],
+                  description: row.description,
+                });
+              } else {
+                const newProd: Product = {
+                  id: crypto.randomUUID(), code: row.code || generateCode("PD"),
+                  name: row.name, name_en: row.name_en, oem_number: row.oem_number,
+                  category_name: row.category_name, brand: row.brand,
+                  image_urls: row.image_urls || [],
+                  cost_price: Number(row.cost_price) || 0, sale_price: Number(row.sale_price) || 0,
+                  unit: row.unit, weight_kg: Number(row.weight_kg) || 0,
+                  package_length_cm: Number(row.package_length_cm) || 0,
+                  package_width_cm: Number(row.package_width_cm) || 0,
+                  package_height_cm: Number(row.package_height_cm) || 0,
+                  status: row.status || "active",
+                  applicable_models: row.applicable_models ? String(row.applicable_models).split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [],
+                  description: row.description,
+                  created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+                } as Product;
+                useStore.setState((state) => ({ products: [newProd, ...state.products] }));
+              }
+              success++;
+            } catch (err: any) {
+              errors.push({ row: data.indexOf(row) + 2, message: err.message || "导入失败" });
+            }
+          }
+          if (!useMockMode) queryClient.invalidateQueries({ queryKey: ["products"] });
           return { success, errors };
         }}
       />
@@ -234,14 +303,17 @@ export default function ProductsPage() {
   );
 }
 
-function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; product: Product | null; onSave: (d: Partial<Product>) => void }) {
-  const { categories } = useStore();
+function ProductFormDialog({ open, onOpenChange, product, onSave, categories, useMockMode }: {
+  open: boolean; onOpenChange: (o: boolean) => void; product: Product | null;
+  onSave: (d: Partial<Product>) => void; categories: any[]; useMockMode: boolean;
+}) {
   const [form, setForm] = useState<Partial<Product>>({});
   const [modelInput, setModelInput] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setForm(product ? { ...product } : { name: "", name_en: "", oem_number: "", category_id: "", brand: "", cost_price: 0, sale_price: 0, unit: "个", weight_kg: 0, package_length_cm: 0, package_width_cm: 0, package_height_cm: 0, status: "active", applicable_models: [], description: "" });
+      setForm(product ? { ...product } : { name: "", name_en: "", oem_number: "", category_id: "", brand: "", cost_price: 0, sale_price: 0, unit: "个", weight_kg: 0, package_length_cm: 0, package_width_cm: 0, package_height_cm: 0, status: "active", applicable_models: [], description: "", image_urls: [] });
       setModelInput("");
     }
   }, [open, product]);
@@ -250,6 +322,61 @@ function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: bool
     if (!modelInput.trim()) return;
     setForm({ ...form, applicable_models: [...(form.applicable_models || []), modelInput.trim()] });
     setModelInput("");
+  };
+
+  // 图片上传处理
+  const handleImageUpload = async (files: FileList) => {
+    const validFiles = Array.from(files).filter((f) => {
+      if (!f.type.startsWith("image/")) { toast.error(`${f.name} 不是图片`); return false; }
+      if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name} 超过2MB`); return false; }
+      return true;
+    });
+
+    if (useMockMode || !product?.id) {
+      // Mock 模式或新产品：转 base64
+      const dataUrls = await Promise.all(validFiles.map((f) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      })));
+      setForm({ ...form, image_urls: [...(form.image_urls || []), ...dataUrls] });
+      toast.success(`已添加 ${dataUrls.length} 张图片`);
+    } else {
+      // Supabase 模式且编辑现有产品：上传到 Storage
+      setUploadingImage(true);
+      try {
+        for (const file of validFiles) {
+          const url = await uploadProductImage(product.id, file);
+          await addProductImage(product.id, url);
+        }
+        // 重新获取产品数据更新 form
+        const { fetchProductById } = await import("@/lib/api/products");
+        const updated = await fetchProductById(product.id);
+        if (updated) setForm({ ...updated });
+        toast.success(`已上传 ${validFiles.length} 张图片到 Storage`);
+      } catch (err: any) {
+        toast.error(`上传失败: ${err.message}`);
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+  };
+
+  const removeImage = async (index: number) => {
+    if (useMockMode || !product?.id) {
+      setForm({ ...form, image_urls: (form.image_urls || []).filter((_, i) => i !== index) });
+    } else {
+      try {
+        await removeProductImage(product.id, index);
+        const { fetchProductById } = await import("@/lib/api/products");
+        const updated = await fetchProductById(product.id);
+        if (updated) setForm({ ...updated });
+        toast.success("图片已删除");
+      } catch (err: any) {
+        toast.error(`删除失败: ${err.message}`);
+      }
+    }
   };
 
   return (
@@ -300,50 +427,25 @@ function ProductFormDialog({ open, onOpenChange, product, onSave }: { open: bool
               <div className="flex flex-wrap gap-3">
                 {(form.image_urls || []).map((url, i) => (
                   <div key={i} className="relative w-24 h-24 rounded-md overflow-hidden border border-slate-200 group">
-                    <img src={url} alt={`产品图片${i + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, image_urls: (form.image_urls || []).filter((_, idx) => idx !== i) })}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                      aria-label="删除图片"
-                    >
-                      <X size={12} />
-                    </button>
-                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-sky-500/90 text-white text-[9px] text-center py-0.5">主图</span>}
+                    <img src={url} alt={`图片${i + 1}`} className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X size={12} /></button>
+                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#38BDF8]/90 text-white text-[9px] text-center py-0.5">主图</span>}
                   </div>
                 ))}
-                <label className="w-24 h-24 rounded-md border-2 border-dashed border-slate-300 hover:border-sky-400 hover:bg-sky-50/40 cursor-pointer flex flex-col items-center justify-center text-slate-400 hover:text-sky-500 transition-colors">
-                  <ImagePlus className="h-5 w-5 mb-1" />
-                  <span className="text-[10px]">添加图片</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length === 0) return;
-                      // 校验大小（≤2MB）和类型
-                      const valid = files.filter((f) => {
-                        if (!f.type.startsWith("image/")) { toast.error(`${f.name} 不是图片文件`); return false; }
-                        if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name} 超过 2MB`); return false; }
-                        return true;
-                      });
-                      // 转 base64 data URL（mock 数据存储，不实际上传）
-                      const dataUrls = await Promise.all(valid.map((f) => new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(f);
-                      })));
-                      setForm({ ...form, image_urls: [...(form.image_urls || []), ...dataUrls] });
-                      toast.success(`已添加 ${dataUrls.length} 张图片`);
-                      e.target.value = "";
-                    }}
-                  />
+                <label className="w-24 h-24 rounded-md border-2 border-dashed border-slate-300 hover:border-[#38BDF8] hover:bg-sky-50/40 cursor-pointer flex flex-col items-center justify-center text-slate-400 hover:text-[#38BDF8] transition-colors">
+                  {uploadingImage ? (
+                    <div className="animate-spin h-5 w-5 border-2 border-[#38BDF8] border-t-transparent rounded-full" />
+                  ) : (
+                    <><ImagePlus className="h-5 w-5 mb-1" /><span className="text-[10px]">{product?.id && !useMockMode ? "上传到Storage" : "添加图片"}</span></>
+                  )}
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={(e) => { if (e.target.files?.length) handleImageUpload(e.target.files); e.target.value = ""; }} disabled={uploadingImage} />
                 </label>
               </div>
-              <p className="text-[10px] text-slate-400">支持 JPG/PNG/WEBP/GIF，单张≤2MB，可选填，第一张为产品主图</p>
+              <p className="text-[10px] text-slate-400">
+                {useMockMode || !product?.id
+                  ? "支持 JPG/PNG/WEBP/GIF，单张≤2MB，第一张为主图（编辑现有产品时可上传到Storage）"
+                  : "图片自动上传到 Supabase Storage，可在多端访问"}
+              </p>
             </div>
           </Field>
           <Field label="产品描述" full><Textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>

@@ -1,19 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase/client";
+import { signIn } from "@/lib/api/auth";
 
-const loginSchema = z.object({
-  email: z.string().email("请输入正确的邮箱地址"),
-  password: z.string().min(6, "密码至少 6 位"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+// 检测是否配置了 Supabase
+const useSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://") && key.length > 50);
+};
 
 const DEMO_ACCOUNTS = [
   { email: "admin@rca-erp.com", password: "admin123", role: "管理员", name: "管理员" },
@@ -26,6 +25,7 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const router = useRouter();
   const login = useStore((s) => s.login);
+  const supabaseEnabled = useSupabase();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -34,28 +34,59 @@ export default function LoginPage() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "admin@rca-erp.com", password: "admin123" },
-  });
+  } = {
+    register: ({ target }: any) => ({}),
+    handleSubmit: (fn: any) => (e: any) => {
+      e?.preventDefault?.();
+      const form = e?.target as HTMLFormElement;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      fn(data);
+    },
+    setValue: (name: string, value: string) => {
+      const input = document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
+      if (input) input.value = value;
+    },
+    formState: { errors: {} },
+  };
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: any) => {
     setLoading(true);
-    // 模拟网络请求
-    await new Promise((r) => setTimeout(r, 600));
-    const user = login(data.email, data.password);
-    if (user) {
-      toast.success(`欢迎回来，${user.name}`);
-      router.push("/");
+    const email = data.email || (document.querySelector('input[type=email]') as HTMLInputElement)?.value;
+    const password = data.password || (document.querySelector('input[type=password]') as HTMLInputElement)?.value;
+
+    if (supabaseEnabled) {
+      // Supabase 认证模式
+      const { user, error } = await signIn(email, password);
+      if (error) {
+        toast.error(error);
+        setLoading(false);
+        return;
+      }
+      if (user) {
+        toast.success(`欢迎回来，${user.name}`);
+        router.push("/");
+        return;
+      }
     } else {
-      toast.error("邮箱或密码错误");
+      // Mock 模式
+      await new Promise((r) => setTimeout(r, 600));
+      const user = login(email, password);
+      if (user) {
+        toast.success(`欢迎回来，${user.name}`);
+        router.push("/");
+      } else {
+        toast.error("邮箱或密码错误");
+      }
     }
     setLoading(false);
   };
 
   const quickFill = (acc: (typeof DEMO_ACCOUNTS)[number]) => {
-    setValue("email", acc.email);
-    setValue("password", acc.password);
+    const emailInput = document.querySelector('input[type=email]') as HTMLInputElement;
+    const passInput = document.querySelector('input[type=password]') as HTMLInputElement;
+    if (emailInput) emailInput.value = acc.email;
+    if (passInput) passInput.value = acc.password;
   };
 
   return (
@@ -68,9 +99,7 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#38BDF8] text-white font-bold text-xl">
-              R
-            </div>
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#38BDF8] text-white font-bold text-xl">R</div>
             <div>
               <div className="text-2xl font-bold tracking-wide">RCA6.0 ERP</div>
               <div className="text-xs text-white/60">汽配外贸企业资源计划系统</div>
@@ -79,13 +108,10 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="text-4xl font-bold leading-tight">
-            一站式汽配外贸
-            <br />
-            企业管理平台
+            一站式汽配外贸<br />企业管理平台
           </h1>
           <p className="text-white/70 text-base leading-relaxed max-w-md">
-            覆盖客户、产品、询盘、报价、订单、采购、库存、发货、财务、单证等14个核心业务模块，
-            助力企业高效运营、智能决策。
+            覆盖客户、产品、询盘、报价、订单、采购、库存、发货、财务、单证等14个核心业务模块，助力企业高效运营、智能决策。
           </p>
           <div className="grid grid-cols-2 gap-4 max-w-md pt-4">
             {[
@@ -94,19 +120,14 @@ export default function LoginPage() {
               { label: "审批流程", value: "8+" },
               { label: "状态机", value: "5+" },
             ].map((s) => (
-              <div
-                key={s.label}
-                className="border border-white/10 rounded-lg p-3 bg-white/5 backdrop-blur-sm"
-              >
+              <div key={s.label} className="border border-white/10 rounded-lg p-3 bg-white/5 backdrop-blur-sm">
                 <div className="text-2xl font-bold text-[#38BDF8]">{s.value}</div>
                 <div className="text-xs text-white/60 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
-        <div className="relative z-10 text-xs text-white/40">
-          © 2026 RCA Auto Parts Trading Co., Ltd. All rights reserved.
-        </div>
+        <div className="relative z-10 text-xs text-white/40">© 2026 RCA Auto Parts Trading Co., Ltd. All rights reserved.</div>
       </div>
 
       {/* 右侧登录卡片 */}
@@ -115,53 +136,46 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* 移动端 Logo */}
             <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#38BDF8] text-white font-bold text-lg">
-                R
-              </div>
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#38BDF8] text-white font-bold text-lg">R</div>
               <div className="text-xl font-bold text-gray-800">RCA6.0 ERP</div>
             </div>
 
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-800">欢迎登录</h2>
               <p className="text-sm text-gray-500 mt-1">
-                请输入您的账号和密码登录系统
+                {supabaseEnabled ? "请输入您的账号和密码登录系统" : "请输入演示账号登录（Mock 模式）"}
               </p>
+              {supabaseEnabled && (
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  已连接 Supabase 认证
+                </p>
+              )}
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">
-                  邮箱账号
-                </label>
+                <label className="text-sm font-medium text-gray-700">邮箱账号</label>
                 <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={16}
-                  />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
                     type="email"
-                    {...register("email")}
+                    name="email"
+                    defaultValue="admin@rca-erp.com"
                     placeholder="admin@rca-erp.com"
                     className="w-full pl-9 pr-3 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
                   />
                 </div>
-                {errors.email && (
-                  <p className="text-xs text-red-500">{errors.email.message}</p>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">
-                  登录密码
-                </label>
+                <label className="text-sm font-medium text-gray-700">登录密码</label>
                 <div className="relative">
-                  <Lock
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={16}
-                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
                     type={showPassword ? "text" : "password"}
-                    {...register("password")}
+                    name="password"
+                    defaultValue="admin123"
                     placeholder="请输入密码"
                     className="w-full pl-9 pr-10 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
                   />
@@ -173,25 +187,14 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-xs text-red-500">
-                    {errors.password.message}
-                  </p>
-                )}
               </div>
 
               <div className="flex items-center justify-between text-xs">
                 <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="rounded border-gray-300"
-                  />
+                  <input type="checkbox" defaultChecked className="rounded border-gray-300" />
                   记住我
                 </label>
-                <a className="text-[#38BDF8] hover:underline cursor-pointer">
-                  忘记密码？
-                </a>
+                <a className="text-[#38BDF8] hover:underline cursor-pointer">忘记密码？</a>
               </div>
 
               <button
@@ -199,21 +202,14 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full h-11 rounded-md bg-[#38BDF8] hover:bg-[#0EA5E9] text-white text-sm font-medium transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {loading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    登录中...
-                  </>
-                ) : (
-                  "登 录"
-                )}
+                {loading ? (<><Loader2 size={16} className="animate-spin" />登录中...</>) : ("登 录")}
               </button>
             </form>
 
             {/* 演示账号 */}
             <div className="mt-6 pt-6 border-t border-gray-100">
               <div className="text-xs text-gray-500 mb-2 font-medium">
-                演示账号（点击快速填充）
+                {supabaseEnabled ? "已注册账号（点击快速填充）" : "演示账号（点击快速填充）"}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {DEMO_ACCOUNTS.map((acc) => (
@@ -228,14 +224,16 @@ export default function LoginPage() {
                   </button>
                 ))}
               </div>
-              <p className="mt-3 text-[11px] text-gray-400 text-center">
-                提示：默认密码为 <code className="px-1 bg-gray-100 rounded">用户名 + 123</code>
-              </p>
+              {!supabaseEnabled && (
+                <p className="mt-3 text-[11px] text-gray-400 text-center">
+                  提示：默认密码为 <code className="px-1 bg-gray-100 rounded">用户名 + 123</code>
+                </p>
+              )}
             </div>
           </div>
 
           <div className="text-center text-xs text-white/40 mt-6">
-            系统使用 Next.js 14 + TypeScript + Tailwind CSS + shadcn/ui 构建
+            系统使用 Next.js 16 + TypeScript + Tailwind CSS + shadcn/ui 构建
           </div>
         </div>
       </div>

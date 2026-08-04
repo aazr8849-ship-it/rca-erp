@@ -69,7 +69,14 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 先尝试 Supabase 登出
+    try {
+      const { signOut } = await import("@/lib/api/auth");
+      await signOut();
+    } catch {
+      // ignore
+    }
     logout();
     router.push("/login");
   };
