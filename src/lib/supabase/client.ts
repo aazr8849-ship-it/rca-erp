@@ -16,9 +16,13 @@ function initClient() {
     return null;
   }
 
-  // 验证 key 长度（publishable key 通常 > 50 字符）
-  if (key.length < 50) {
-    console.error("❌ NEXT_PUBLIC_SUPABASE_ANON_KEY 长度异常(" + key.length + "字符)，可能被截断。请检查 Vercel 环境变量配置。");
+  // 验证 key 格式（新版 sb_publishable_ 格式约46字符，旧版JWT格式100+字符）
+  if (!key.startsWith("sb_publishable_") && !key.startsWith("eyJ")) {
+    console.error("❌ NEXT_PUBLIC_SUPABASE_ANON_KEY 格式错误，应以 sb_publishable_ 或 eyJ 开头");
+    return null;
+  }
+  if (key.length < 40) {
+    console.error("❌ NEXT_PUBLIC_SUPABASE_ANON_KEY 长度异常(" + key.length + "字符)，可能被截断");
     return null;
   }
 
