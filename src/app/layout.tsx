@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
   title: "RCA6.0 ERP - 汽配外贸企业资源计划系统",
@@ -17,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
