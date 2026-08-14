@@ -1,31 +1,68 @@
 "use client";
-import { useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { use, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Truck, Phone, Mail, MapPin, Building2, Pencil } from "lucide-react";
+import { ArrowLeft, Truck, Building2, Phone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/common/status-badge";
 import { InfoCard, InfoItem } from "@/components/common/info-card";
-import { GenericDataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
+import { GenericDataTable, type Column } from "@/components/common/data-table";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { fetchSupplierById } from "@/lib/api/suppliers";
 import { StarRating } from "../page";
+import type { PurchaseOrder, Payable } from "@/lib/types";
 
-export default function SupplierDetailPage() {
-  const params = useParams();
+const useSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://") && (key.startsWith("sb_publishable_") || key.startsWith("eyJ")) && key.length > 30);
+};
+
+export default function SupplierDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
-  const { suppliers, products, purchaseOrders, payables } = useStore();
-  const supplier = suppliers.find((s) => s.id === params.id);
+  const supabaseEnabled = useSupabase();
+  const { suppliers: mockSuppliers, products, purchaseOrders, payables } = useStore();
+
+  const { data: supabaseSupplier, isLoading } = useQuery({
+    queryKey: ["supplier", id],
+    queryFn: () => fetchSupplierById(id),
+    enabled: supabaseEnabled,
+    retry: 1,
+  });
+
+  const supplier = supabaseEnabled ? supabaseSupplier : mockSuppliers.find((s) => s.id === id);
 
   const supplierProducts = useMemo(() => products.filter((p) => p.status === "active").slice(0, 5), [products]);
-  const supplierPOs = useMemo(() => purchaseOrders.filter((p) => p.supplier_id === params.id), [purchaseOrders, params.id]);
-  const supplierPays = useMemo(() => payables.filter((p) => p.supplier_id === params.id), [payables, params.id]);
+  const supplierPOs = useMemo(() => purchaseOrders.filter((p) => p.supplier_id === id), [purchaseOrders, id]);
+  const supplierPays = useMemo(() => payables.filter((p) => p.supplier_id === id), [payables, id]);
 
-  if (!supplier) {
+  if (!isLoading && !supplier) {
     return <EmptyState icon={Truck} title="供应商不存在" description="该供应商可能已被删除或ID错误" action={<Button onClick={() => router.push("/suppliers")}>返回列表</Button>} />;
   }
+
+  if (!supplier) {
+    return <div className="flex items-center justify-center py-20"><div className="text-gray-500 text-sm">加载中...</div></div>;
+  }
+
+  const poColumns: Column<PurchaseOrder>[] = [
+    { key: "code", header: "采购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+    { key: "order_date", header: "下单日期", render: (r) => formatDate(r.order_date) },
+    { key: "total_amount", header: "金额", align: "right", render: (r) => formatCurrency(r.total_amount, r.currency) },
+    { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
+  ];
+
+  const payColumns: Column<Payable>[] = [
+    { key: "code", header: "应付编号", render: (r) => <span className="text-xs font-mono">{r.code}</span> },
+    { key: "category", header: "类别" },
+    { key: "amount", header: "金额", align: "right", render: (r) => formatCurrency(r.amount, r.currency) },
+    { key: "due_date", header: "到期日", render: (r) => formatDate(r.due_date) },
+    { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
+  ];
 
   return (
     <div className="space-y-4">
@@ -41,7 +78,7 @@ export default function SupplierDetailPage() {
             <div className="text-xs text-gray-500 mt-0.5">编码 {supplier.code} · 创建于 {formatDate(supplier.created_at)}</div>
           </div>
         </div>
-        <Button onClick={() => router.push("/suppliers")} className="bg-[#38BDF8] hover:bg-[#0EA5E9]"><Pencil className="h-3.5 w-3.5 mr-1.5" />编辑信息</Button>
+        <Button onClick={() => router.push("/suppliers")} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">编辑信息</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -51,10 +88,10 @@ export default function SupplierDetailPage() {
             <InfoItem label="供应商名称" value={supplier.name} />
             <InfoItem label="英文名称" value={supplier.name_en || "-"} />
             <InfoItem label="联系人" value={supplier.contact_person} />
-            <InfoItem label="联系邮箱" value={supplier.contact_email ? <a href={`mailto:${supplier.contact_email}`} className="text-[#38BDF8] hover:underline flex items-center gap-1"><Mail className="h-3 w-3" />{supplier.contact_email}</a> : "-"} />
-            <InfoItem label="联系电话" value={supplier.contact_phone ? <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{supplier.contact_phone}</span> : "-"} />
+            <InfoItem label="联系邮箱" value={supplier.contact_email || "-"} />
+            <InfoItem label="联系电话" value={supplier.contact_phone || "-"} />
             <InfoItem label="国家" value={supplier.country} />
-            <InfoItem label="地址" value={supplier.address ? <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{supplier.address}</span> : "-"} />
+            <InfoItem label="地址" value={supplier.address || "-"} />
             <InfoItem label="等级" value={<StatusBadge type="level" status={supplier.level} />} />
             <InfoItem label="状态" value={<StatusBadge status={supplier.status} />} />
             <InfoItem label="主营品类" value={<div className="flex flex-wrap gap-1">{(supplier.main_category || []).map((c, i) => <span key={i} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{c}</span>)}</div>} />
@@ -90,23 +127,8 @@ export default function SupplierDetailPage() {
             { key: "sale_price", header: "销售价", align: "right", render: (r) => formatCurrency(r.sale_price, "USD") },
           ]} emptyTitle="暂无供货产品" />
         </TabsContent>
-        <TabsContent value="purchases" className="mt-3">
-          <GenericDataTable data={supplierPOs} columns={[
-            { key: "code", header: "采购单号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
-            { key: "order_date", header: "下单日期", render: (r) => formatDate(r.order_date) },
-            { key: "total_amount", header: "金额", align: "right", render: (r) => formatCurrency(r.total_amount, r.currency) },
-            { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
-          ]} emptyTitle="暂无采购记录" />
-        </TabsContent>
-        <TabsContent value="payables" className="mt-3">
-          <GenericDataTable data={supplierPays} columns={[
-            { key: "code", header: "应付编号", render: (r) => <span className="text-xs font-mono">{r.code}</span> },
-            { key: "category", header: "类别" },
-            { key: "amount", header: "金额", align: "right", render: (r) => formatCurrency(r.amount, r.currency) },
-            { key: "due_date", header: "到期日", render: (r) => formatDate(r.due_date) },
-            { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
-          ]} emptyTitle="暂无应付记录" />
-        </TabsContent>
+        <TabsContent value="purchases" className="mt-3"><GenericDataTable data={supplierPOs} columns={poColumns} emptyTitle="暂无采购记录" /></TabsContent>
+        <TabsContent value="payables" className="mt-3"><GenericDataTable data={supplierPays} columns={payColumns} emptyTitle="暂无应付记录" /></TabsContent>
       </Tabs>
     </div>
   );

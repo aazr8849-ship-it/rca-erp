@@ -1,25 +1,47 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Package, Pencil, Phone, Layers } from "lucide-react";
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Package, Pencil, Layers } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/common/status-badge";
 import { InfoCard, InfoItem } from "@/components/common/info-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { fetchProductById } from "@/lib/api/products";
 
-export default function ProductDetailPage() {
-  const params = useParams();
+const useSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://") && (key.startsWith("sb_publishable_") || key.startsWith("eyJ")) && key.length > 30);
+};
+
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
-  const { products, inventory, stockMovements } = useStore();
-  const product = products.find((p) => p.id === params.id);
-  const stock = inventory.find((i) => i.product_id === params.id);
-  const movements = stockMovements.filter((m) => m.product_id === params.id).slice(0, 20);
+  const supabaseEnabled = useSupabase();
+  const { products: mockProducts, inventory, stockMovements } = useStore();
 
-  if (!product) return <EmptyState icon={Package} title="产品不存在" action={<Button onClick={() => router.push("/products")}>返回列表</Button>} />;
+  // Supabase 查询
+  const { data: supabaseProduct, isLoading } = useQuery({
+    queryKey: ["product", id],
+    queryFn: () => fetchProductById(id),
+    enabled: supabaseEnabled,
+    retry: 1,
+  });
+
+  const product = supabaseEnabled ? supabaseProduct : mockProducts.find((p) => p.id === id);
+  const stock = inventory.find((i) => i.product_id === id);
+  const movements = stockMovements.filter((m) => m.product_id === id).slice(0, 20);
+
+  if (!isLoading && !product) {
+    return <EmptyState icon={Package} title="产品不存在" description="该产品可能已被删除或ID错误" action={<Button onClick={() => router.push("/products")}>返回列表</Button>} />;
+  }
+
+  if (!product) {
+    return <div className="flex items-center justify-center py-20"><div className="text-gray-500 text-sm">加载中...</div></div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -39,19 +61,12 @@ export default function ProductDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <InfoCard title="基本信息" icon={Package} className="lg:col-span-2">
-          {/* 产品图片画廊 */}
           {product.image_urls && product.image_urls.length > 0 && (
             <div className="mb-4 pb-4 border-b border-slate-100">
               <div className="text-xs text-slate-500 mb-2">产品图片 ({product.image_urls.length})</div>
               <div className="flex flex-wrap gap-2">
                 {product.image_urls.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`relative w-20 h-20 rounded-md overflow-hidden border-2 hover:border-[#38BDF8] transition-colors ${i === 0 ? "border-[#38BDF8]" : "border-slate-200"}`}
-                  >
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={`relative w-20 h-20 rounded-md overflow-hidden border-2 hover:border-[#38BDF8] transition-colors ${i === 0 ? "border-[#38BDF8]" : "border-slate-200"}`}>
                     <img src={url} alt={`产品图片${i + 1}`} className="w-full h-full object-cover" />
                     {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#38BDF8]/90 text-white text-[9px] text-center py-0.5">主图</span>}
                   </a>
@@ -80,7 +95,7 @@ export default function ProductDetailPage() {
             <div className="space-y-3">
               <div className="bg-orange-50 rounded-md p-3"><div className="text-xs text-gray-600">成本价</div><div className="text-xl font-bold text-orange-600 mt-1">{formatCurrency(product.cost_price, "CNY")}</div></div>
               <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">销售价</div><div className="text-xl font-bold text-[#38BDF8] mt-1">{formatCurrency(product.sale_price, "USD")}</div></div>
-              <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">毛利率</div><div className="text-xl font-bold text-green-600 mt-1">{(((product.sale_price * 7.25 - product.cost_price) / (product.sale_price * 7.25)) * 100).toFixed(1)}%</div></div>
+              <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">毛利率</div><div className="text-xl font-bold text-green-600 mt-1">{product.sale_price > 0 ? (((product.sale_price * 7.25 - product.cost_price) / (product.sale_price * 7.25)) * 100).toFixed(1) : 0}%</div></div>
             </div>
           </InfoCard>
 
