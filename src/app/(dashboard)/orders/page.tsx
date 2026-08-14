@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, ShoppingCart } from "lucide-react";
@@ -45,7 +46,7 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <PageHeader title="订单管理" description={`共 ${filtered.length} 条订单记录`} actions={
+      <PageHeader title="订单管理" description={`共 ${filtered.length} 条订单记录`} actions={<>
         <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "订单列表", "订单", [
           { key: "code", label: "订单号" },
           { key: "customer_name", label: "客户" },
@@ -58,6 +59,8 @@ export default function OrdersPage() {
           { key: "payment_terms", label: "付款条件" },
           { key: "created_at", label: "创建时间" },
         ]); }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => alert("请通过报价单转订单方式创建")}>新建订单</ActionButton>
+      </>
       } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索订单号/客户..." className="w-64" />

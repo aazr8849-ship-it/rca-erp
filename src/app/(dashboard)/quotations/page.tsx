@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, FileText } from "lucide-react";
@@ -45,7 +46,7 @@ export default function QuotationsPage() {
 
   return (
     <div>
-      <PageHeader title="报价管理" description={`共 ${filtered.length} 条报价记录`} actions={
+      <PageHeader title="报价管理" description={`共 ${filtered.length} 条报价记录`} actions={<>
         <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "报价列表", "报价", [
           { key: "code", label: "报价号" },
           { key: "customer_name", label: "客户" },
@@ -58,6 +59,8 @@ export default function QuotationsPage() {
           { key: "payment_terms", label: "付款条件" },
           { key: "created_at", label: "创建时间" },
         ]); }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => alert("请通过询盘详情页创建报价单")}>新建报价</ActionButton>
+      </>
       } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPage(1); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索报价号/客户..." className="w-64" />

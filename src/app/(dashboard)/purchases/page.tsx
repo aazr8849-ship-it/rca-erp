@@ -146,7 +146,7 @@ export default function PurchasesPage() {
 
   return (
     <div>
-      <PageHeader title="采购管理" description="请购单与采购订单全流程管理" actions={
+      <PageHeader title="采购管理" description="请购单与采购订单全流程管理" actions={<>
         <ActionButton icon="export" onClick={async () => {
           const { exportToExcel } = await import("@/lib/excel-utils");
           if (tab === "requests") {
@@ -170,6 +170,8 @@ export default function PurchasesPage() {
             ]);
           }
         }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => alert("请通过订单确认后自动生成请购单")}>新建采购</ActionButton>
+      </>
       } />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

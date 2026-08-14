@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, Ship as ShipIcon } from "lucide-react";
@@ -43,7 +44,7 @@ export default function ShipmentsPage() {
 
   return (
     <div>
-      <PageHeader title="发货计划" description={`共 ${filtered.length} 条发货记录`} actions={
+      <PageHeader title="发货计划" description={`共 ${filtered.length} 条发货记录`} actions={<>
         <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "发货列表", "发货", [
           { key: "code", label: "发货号" },
           { key: "order_code", label: "订单号" },
@@ -58,6 +59,8 @@ export default function ShipmentsPage() {
           { key: "status", label: "状态" },
           { key: "created_at", label: "创建时间" },
         ]); }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => alert("请通过订单详情页创建发货单")}>新建发货</ActionButton>
+      </>
       } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setMethodFilter("__all__"); }}>
         <SearchInput value={search} onChange={setSearch} placeholder="搜索发货号/订单/客户..." className="w-64" />
