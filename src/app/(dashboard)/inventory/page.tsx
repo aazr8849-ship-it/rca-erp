@@ -91,7 +91,7 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader title="库存管理" description="库存查询、出入库流水、库存调整" actions={
+      <PageHeader title="库存管理" description="库存查询、出入库流水、库存调整" actions={<>
         <ActionButton icon="export" onClick={async () => {
           const { exportToExcel } = await import("@/lib/excel-utils");
           const exportData = tab === "stock" ? filteredInventory : (tab === "inbound" ? inboundMovements : outboundMovements);
@@ -117,6 +117,8 @@ export default function InventoryPage() {
             ]);
           }
         }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => toast.info("请通过采购订单入库或手动调整库存")}>库存调整</ActionButton>
+      </>
       } />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

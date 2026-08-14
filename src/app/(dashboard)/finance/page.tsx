@@ -75,7 +75,7 @@ export default function FinancePage() {
 
   return (
     <div>
-      <PageHeader title="财务管理" description="应收账款与应付账款管理" actions={
+      <PageHeader title="财务管理" description="应收账款与应付账款管理" actions={<>
         <ActionButton icon="export" onClick={async () => {
           const { exportToExcel } = await import("@/lib/excel-utils");
           const data = tab === "receivables" ? filteredRec : filteredPay;
@@ -107,6 +107,8 @@ export default function FinancePage() {
             ]);
           }
         }}>导出Excel</ActionButton>
+        <ActionButton icon="add" onClick={() => toast.info("请通过订单确认自动生成应收账款，或通过采购入库生成应付账款")}>新建账单</ActionButton>
+      </>
       } />
 
       {/* 统计卡片 */}
