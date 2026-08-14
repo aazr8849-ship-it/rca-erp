@@ -134,7 +134,27 @@ export default function ProductsPage() {
           await updateProduct(editing.id, payload);
           toast.success("产品信息已更新");
         } else {
-          await createProduct(payload);
+          const created = await createProduct(payload);
+          // 如果有base64图片，上传到Storage并更新产品
+          if (created.id && payload.image_urls && payload.image_urls.length > 0) {
+            try {
+              for (let i = 0; i < payload.image_urls.length; i++) {
+                const dataUrl = payload.image_urls[i];
+                if (dataUrl.startsWith("data:")) {
+                  // base64转File
+                  const res = await fetch(dataUrl);
+                  const blob = await res.blob();
+                  const file = new File([blob], `image-${i}.png`, { type: blob.type });
+                  const url = await uploadProductImage(created.id, file);
+                  await addProductImage(created.id, url);
+                }
+              }
+              // 移除base64图片，只保留Storage URL
+              const { data: updated } = await import("@/lib/api/products").then(m => ({ data: null }));
+            } catch (imgErr: any) {
+              console.warn("图片上传到Storage失败，保留base64:", imgErr);
+            }
+          }
           toast.success("产品创建成功");
         }
         queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -340,7 +360,7 @@ function ProductFormDialog({ open, onOpenChange, product, onSave, categories, us
         reader.onerror = reject;
         reader.readAsDataURL(f);
       })));
-      setForm({ ...form, image_urls: [...(form.image_urls || []), ...dataUrls] });
+      setForm((prev) => ({ ...prev, image_urls: [...(prev.image_urls || []), ...dataUrls] }));
       toast.success(`已添加 ${dataUrls.length} 张图片`);
     } else {
       // Supabase 模式且编辑现有产品：上传到 Storage
