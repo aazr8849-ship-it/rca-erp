@@ -2,46 +2,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  Truck,
-  Package,
-  MessageSquare,
-  FileText,
-  ShoppingCart,
-  ClipboardList,
-  Warehouse,
-  Ship,
-  DollarSign,
-  FolderOpen,
-  History,
-  Settings,
-  X,
+  LayoutDashboard, Users, Truck, Package, MessageSquare, FileText,
+  ShoppingCart, ClipboardList, Warehouse, Ship, DollarSign, FolderOpen,
+  History, Settings, UserCog, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
+import { getVisibleNavItems, type NavItem } from "@/lib/permissions";
 
-interface NavItem {
-  label: string;
-  path: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { label: "工作台", path: "/", icon: LayoutDashboard },
-  { label: "客户管理", path: "/customers", icon: Users },
-  { label: "供应商管理", path: "/suppliers", icon: Truck },
-  { label: "产品管理", path: "/products", icon: Package },
-  { label: "询盘管理", path: "/inquiries", icon: MessageSquare },
-  { label: "报价管理", path: "/quotations", icon: FileText },
-  { label: "订单管理", path: "/orders", icon: ShoppingCart },
-  { label: "采购管理", path: "/purchases", icon: ClipboardList },
-  { label: "库存管理", path: "/inventory", icon: Warehouse },
-  { label: "发货计划", path: "/shipments", icon: Ship },
-  { label: "财务管理", path: "/finance", icon: DollarSign },
-  { label: "单证管理", path: "/documents", icon: FolderOpen },
-  { label: "操作日志", path: "/audit-logs", icon: History },
-  { label: "系统设置", path: "/settings", icon: Settings },
-];
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard, Users, Truck, Package, MessageSquare, FileText,
+  ShoppingCart, ClipboardList, Warehouse, Ship, DollarSign, FolderOpen,
+  History, Settings, UserCog,
+};
 
 interface SidebarProps {
   open: boolean;
@@ -50,10 +23,14 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { currentUser } = useStore();
+
+  // 根据用户角色获取可见导航项
+  const role = (currentUser?.role as any) || "admin";
+  const navItems: NavItem[] = getVisibleNavItems(role);
 
   return (
     <>
-      {/* 移动端遮罩 */}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
@@ -90,8 +67,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* 导航列表 */}
         <nav className="flex-1 overflow-y-auto py-3 custom-scroll">
           <ul className="space-y-0.5 px-2">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
+            {navItems.map((item) => {
+              const Icon = ICON_MAP[item.icon] || LayoutDashboard;
               const isActive =
                 item.path === "/"
                   ? pathname === "/"

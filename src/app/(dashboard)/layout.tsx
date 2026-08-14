@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/api/auth";
+import { hasPermission } from "@/lib/permissions";
+import { toast } from "sonner";
 
-// 检测是否配置了 Supabase
 const useSupabase = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,17 +23,16 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checking, setChecking] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const supabaseEnabled = useSupabase();
   const { currentUser, login } = useStore();
 
   useEffect(() => {
     const checkAuth = async () => {
       if (supabaseEnabled) {
-        // Supabase 模式：检查 session
         try {
           const user = await getCurrentUser();
           if (user) {
-            // 同步到 store（让 Header 能显示用户信息）
             if (!useStore.getState().currentUser) {
               login(user.email, "");
             }
@@ -44,7 +44,6 @@ export default function DashboardLayout({
           router.replace("/login");
         }
       } else {
-        // Mock 模式：检查 store
         const timer = setTimeout(() => {
           if (!useStore.getState().currentUser) {
             router.replace("/login");
@@ -59,7 +58,17 @@ export default function DashboardLayout({
     checkAuth();
   }, [router, supabaseEnabled, login]);
 
-  // 监听 Supabase auth 状态变化
+  // 权限检查
+  useEffect(() => {
+    if (!checking && currentUser) {
+      const role = (currentUser.role as any) || "admin";
+      if (!hasPermission(role, pathname)) {
+        toast.error("您没有权限访问此页面");
+        router.push("/");
+      }
+    }
+  }, [pathname, currentUser, checking, router]);
+
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return;
 
