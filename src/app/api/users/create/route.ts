@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +9,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "缺少必填字段" }, { status: 400 });
     }
 
+    // 动态导入admin client（避免构建时报错）
+    const { createAdminClient } = await import("@/lib/supabase/admin");
     const adminClient = createAdminClient();
 
     // 1. 创建Auth用户
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // 自动确认邮箱
+      email_confirm: true,
     });
 
     if (authError) {
@@ -39,7 +40,6 @@ export async function POST(request: NextRequest) {
       });
 
     if (profileError) {
-      // 如果profile创建失败，删除已创建的auth用户
       await adminClient.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
