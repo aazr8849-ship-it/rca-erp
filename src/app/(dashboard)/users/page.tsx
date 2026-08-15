@@ -65,30 +65,24 @@ export default function UsersPage() {
   };
 
   const handleCreate = async () => {
-    if (!supabase) return;
     if (!newUser.email || !newUser.password || !newUser.name) {
       toast.error("请填写所有必填项");
       return;
     }
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
+      const res = await fetch("/api/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newUser.email,
+          password: newUser.password,
+          name: newUser.name,
+          role: newUser.role,
+        }),
       });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("创建用户失败");
-
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: authData.user.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        status: "active",
-      });
-
-      if (profileError) throw profileError;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "创建失败");
 
       toast.success(`用户 ${newUser.name} 创建成功`);
       setCreateOpen(false);
@@ -100,13 +94,14 @@ export default function UsersPage() {
   };
 
   const handleUpdateRole = async (userId: string, role: UserRole) => {
-    if (!supabase) return;
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role, updated_at: new Date().toISOString() })
-        .eq("id", userId);
-      if (error) throw error;
+      const res = await fetch("/api/users/update-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "更新失败");
       toast.success("角色已更新");
       fetchUsers();
     } catch (err: any) {
@@ -115,13 +110,16 @@ export default function UsersPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget || !supabase) return;
+    if (!deleteTarget) return;
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", deleteTarget.id);
-      if (error) throw error;
+      const res = await fetch("/api/users/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: deleteTarget.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "删除失败");
+
       toast.success("用户已删除");
       setDeleteTarget(null);
       fetchUsers();
