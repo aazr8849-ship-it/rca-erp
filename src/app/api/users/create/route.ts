@@ -9,30 +9,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "缺少必填字段" }, { status: 400 });
     }
 
-    // 动态导入admin client（避免构建时报错）
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const adminClient = createAdminClient();
 
-    // 1. 创建Auth用户
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
+    // 1. 检查用户是否已存在
+    const { data: existingUser } = await adminClient.auth.admin.listUsers();
+    const existing = existingUser?.users?.find((u: any) => u.email === email);
+    
+    let userId: string;
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+    if (existing) {
+      // 用户已存在，更新密码
+      userId = existing.id;
+      await adminClient.auth.admin.updateUserById(userId, { password });
+    } else {
+      // 创建新用户
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+
+      if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 400 });
+      }
+      userId = authData.user!.id;
     }
 
-    if (!authData.user) {
-      return NextResponse.json({ error: "创建用户失败" }, { status: 500 });
-    }
-
-    // 2. 创建profile
+    // 2. 用upsert创建或更新profile
     const { error: profileError } = await adminClient
       .from("profiles")
-      .insert({
-        id: authData.user.id,
+      .upsert({
+        id: userId,
         email,
         name,
         role: role || "sales",
@@ -40,14 +48,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (profileError) {
-      await adminClient.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
       message: `用户 ${name} 创建成功`,
-      userId: authData.user.id,
+      userId,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "服务器错误" }, { status: 500 });

@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
-  
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -13,17 +12,16 @@ export default withPWA({
   dest: "public",
   register: true,
   disable: process.env.NODE_ENV === "development",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  cacheOnFrontEndNav: false,  // 关闭前端导航缓存
+  aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   workbox: {
-    globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,gif,webp,woff,woff2}"],
-    navigateFallback: "/",
-    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-    // 强制更新：跳过等待，立即激活新版本
+    globPatterns: ["**/*.{js,css,svg,png,jpg,jpeg,gif,webp,woff,woff2}"],  // 不缓存html
+    navigateFallback: null,  // 不使用离线回退
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
     skipWaiting: true,
     clientsClaim: true,
-    // 不缓存API请求
+    cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
         urlPattern: /^https?.*\/api\/.*/,
@@ -32,6 +30,13 @@ export default withPWA({
       {
         urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
         handler: "NetworkOnly",
+      },
+      {
+        urlPattern: /\.(?:js|css)$/,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-resources",
+        },
       },
     ],
   },
