@@ -38,6 +38,7 @@ export default function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
   const [newUser, setNewUser] = useState({ email: "", password: "", name: "", role: "sales" as UserRole });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (supabaseEnabled) {
@@ -65,31 +66,39 @@ export default function UsersPage() {
   };
 
   const handleCreate = async () => {
-    if (!newUser.email || !newUser.password || !newUser.name) {
+    // 从DOM直接读取值作为后备
+    const emailVal = newUser.email || (document.querySelector('input[type=email]') as HTMLInputElement)?.value || "";
+    const passVal = newUser.password || (document.querySelector('input[type=password]') as HTMLInputElement)?.value || "";
+    const nameVal = newUser.name || (document.querySelectorAll('input[type=text]')[0] as HTMLInputElement)?.value || "";
+
+    if (!emailVal || !passVal || !nameVal) {
       toast.error("请填写所有必填项");
       return;
     }
 
+    setCreating(true);
     try {
       const res = await fetch("/api/users/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          name: newUser.name,
+          email: emailVal,
+          password: passVal,
+          name: nameVal,
           role: newUser.role,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "创建失败");
 
-      toast.success(`用户 ${newUser.name} 创建成功`);
+      toast.success(`用户 ${nameVal} 创建成功`);
       setCreateOpen(false);
       setNewUser({ email: "", password: "", name: "", role: "sales" });
       fetchUsers();
     } catch (err: any) {
       toast.error("创建失败: " + err.message);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -270,7 +279,7 @@ export default function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
-            <Button onClick={handleCreate} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">创建用户</Button>
+            <Button onClick={handleCreate} disabled={creating} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{creating ? "创建中..." : "创建用户"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

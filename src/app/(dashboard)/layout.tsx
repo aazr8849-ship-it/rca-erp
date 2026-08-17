@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { PWAInstallButton } from "@/components/pwa/install-button";
+import { AutoUpdater } from "@/components/pwa/auto-updater";
 import { Header } from "@/components/layout/header";
 import { useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase/client";
@@ -95,6 +96,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <PWAInstallButton />
+      <AutoUpdater />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
