@@ -535,6 +535,7 @@ interface StoreState {
 
   // Actions
   login: (email: string, _password: string) => User | null;
+  setCurrentUser: (user: User | null) => void;
   logout: () => void;
   addAuditLog: (log: Omit<AuditLog, "id" | "created_at">) => void;
   // Reset（开发用）
@@ -581,6 +582,8 @@ export const useStore = create<StoreState>()(
       },
 
       logout: () => set({ currentUser: null }),
+
+      setCurrentUser: (user: User | null) => set({ currentUser: user }),
 
       addAuditLog: (log) =>
         set((state) => ({

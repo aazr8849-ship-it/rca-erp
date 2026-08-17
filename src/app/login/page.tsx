@@ -25,6 +25,7 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const router = useRouter();
   const login = useStore((s) => s.login);
+  const setCurrentUser = useStore((s) => s.setCurrentUser);
   const supabaseEnabled = useSupabase();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,15 @@ export default function LoginPage() {
         return;
       }
       if (user) {
+        // 直接设置currentUser到store
+        setCurrentUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          status: user.status || "active",
+          created_at: user.created_at || new Date().toISOString(),
+        });
         toast.success(`欢迎回来，${user.name}`);
         router.push("/");
         return;

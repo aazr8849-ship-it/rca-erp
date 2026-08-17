@@ -27,7 +27,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const supabaseEnabled = useSupabase();
-  const { currentUser, login } = useStore();
+  const { currentUser, setCurrentUser } = useStore() as any;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,14 +35,21 @@ export default function DashboardLayout({
         try {
           const user = await getCurrentUser();
           if (user) {
-            if (!useStore.getState().currentUser) {
-              login(user.email, "");
-            }
+            // 直接设置currentUser，不调用login()
+            setCurrentUser({
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+              status: user.status || "active",
+              created_at: user.created_at || new Date().toISOString(),
+            });
             setChecking(false);
           } else {
             router.replace("/login");
           }
-        } catch {
+        } catch (err) {
+          console.error("Auth check failed:", err);
           router.replace("/login");
         }
       } else {
@@ -58,7 +65,7 @@ export default function DashboardLayout({
     };
 
     checkAuth();
-  }, [router, supabaseEnabled, login]);
+  }, [router, supabaseEnabled, setCurrentUser]);
 
   // 权限检查
   useEffect(() => {
@@ -71,12 +78,14 @@ export default function DashboardLayout({
     }
   }, [pathname, currentUser, checking, router]);
 
+  // 监听 Supabase auth 状态变化
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_OUT" || !session) {
+          useStore.getState().logout();
           router.replace("/login");
         }
       },
