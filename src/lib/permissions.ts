@@ -27,19 +27,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
     "/", "/customers", "/suppliers", "/products", "/inquiries", "/quotations",
     "/orders", "/purchases", "/inventory", "/shipments", "/finance", "/documents",
-    "/audit-logs", "/settings", "/users",
+    "/audit-logs", "/settings", "/users", "/profile",
   ],
   sales: [
-    "/", "/customers", "/products", "/inquiries", "/quotations", "/orders", "/documents",
+    "/", "/customers", "/products", "/inquiries", "/quotations", "/orders", "/documents", "/profile",
   ],
   purchaser: [
-    "/", "/suppliers", "/products", "/purchases", "/inventory",
+    "/", "/suppliers", "/products", "/purchases", "/inventory", "/profile",
   ],
   warehouse: [
-    "/", "/products", "/inventory", "/shipments", "/documents",
+    "/", "/products", "/inventory", "/shipments", "/documents", "/profile",
   ],
   finance: [
-    "/", "/orders", "/finance", "/documents",
+    "/", "/orders", "/finance", "/documents", "/profile",
   ],
 };
 
@@ -69,6 +69,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "操作日志", path: "/audit-logs", icon: "History", roles: ["admin"] },
   { label: "用户管理", path: "/users", icon: "UserCog", roles: ["admin"] },
   { label: "系统设置", path: "/settings", icon: "Settings", roles: ["admin"] },
+  { label: "个人信息", path: "/profile", icon: "User", roles: ["admin", "sales", "purchaser", "warehouse", "finance"] },
 ];
 
 /**

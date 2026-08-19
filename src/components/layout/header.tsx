@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
@@ -226,7 +227,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 ))
               )}
             </div>
-            <div className="border-t p-2">
+            <div className="border-t p-2 flex gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -235,6 +236,20 @@ export function Header({ onMenuClick }: HeaderProps) {
               >
                 查看全部通知
               </Button>
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => {
+                    useStore.setState((state) => ({ notifications: [] }));
+                    toast.success("已清除所有通知");
+                    setNotifOpen(false);
+                  }}
+                >
+                  清除全部
+                </Button>
+              )}
             </div>
           </PopoverContent>
         </Popover>

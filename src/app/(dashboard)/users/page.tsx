@@ -49,15 +49,12 @@ export default function UsersPage() {
   }, [supabaseEnabled]);
 
   const fetchUsers = async () => {
-    if (!supabase) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setUsers(data || []);
+      const res = await fetch("/api/users/list");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "获取失败");
+      setUsers(data.data || []);
     } catch (err: any) {
       toast.error("获取用户列表失败: " + err.message);
     } finally {

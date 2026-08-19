@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Truck, Package, MessageSquare, FileText,
   ShoppingCart, ClipboardList, Warehouse, Ship, DollarSign, FolderOpen,
-  History, Settings, UserCog, X,
+  History, Settings, UserCog, User, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
@@ -13,7 +13,7 @@ import { getVisibleNavItems, type NavItem } from "@/lib/permissions";
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, Users, Truck, Package, MessageSquare, FileText,
   ShoppingCart, ClipboardList, Warehouse, Ship, DollarSign, FolderOpen,
-  History, Settings, UserCog,
+  History, Settings, UserCog, User,
 };
 
 interface SidebarProps {
