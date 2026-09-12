@@ -106,14 +106,14 @@ export default function ProductsPage() {
         ) : (
           <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 shrink-0"><Package className="h-4 w-4" /></div>
         )}
-        <div><div className="text-sm font-medium text-slate-800 hover:text-[#38BDF8] hover:underline">{r.name}</div>{r.name_en && <div className="text-xs text-slate-500">{r.name_en}</div>}</div>
+        <div><div className="text-sm font-medium text-slate-800 hover:text-[#2E8BFF] hover:underline">{r.name}</div>{r.name_en && <div className="text-xs text-slate-500">{r.name_en}</div>}</div>
       </Link>
     ) },
     { key: "oem_number", header: "OEM号", width: "140px", render: (r) => <span className="text-xs font-mono">{r.oem_number || "-"}</span> },
     { key: "category_name", header: "分类", width: "100px" },
     { key: "brand", header: "品牌", width: "80px" },
     { key: "cost_price", header: "成本价", width: "100px", align: "right", render: (r) => <span className="text-xs">{formatCurrency(r.cost_price, "CNY")}</span> },
-    { key: "sale_price", header: "销售价", width: "100px", align: "right", render: (r) => <span className="text-xs font-medium text-[#38BDF8]">{formatCurrency(r.sale_price, "USD")}</span> },
+    { key: "sale_price", header: "销售价", width: "100px", align: "right", render: (r) => <span className="text-xs font-medium text-[#2E8BFF]">{formatCurrency(r.sale_price, "USD")}</span> },
     { key: "stock", header: "库存", width: "100px", align: "right", render: (r) => { const s = getStock(r.id); return s ? <span className={s.available_quantity < 50 ? "text-red-500 text-xs font-medium" : "text-xs"}>{s.available_quantity} {r.unit}</span> : <span className="text-xs text-gray-400">无库存</span>; } },
     { key: "status", header: "状态", width: "80px", render: (r) => <StatusBadge status={r.status} /> },
     { key: "actions", header: "操作", width: "120px", align: "center", render: (r) => (
@@ -449,12 +449,12 @@ function ProductFormDialog({ open, onOpenChange, product, onSave, categories, us
                   <div key={i} className="relative w-24 h-24 rounded-md overflow-hidden border border-slate-200 group">
                     <img src={url} alt={`图片${i + 1}`} className="w-full h-full object-cover" />
                     <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X size={12} /></button>
-                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#38BDF8]/90 text-white text-[9px] text-center py-0.5">主图</span>}
+                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#2E8BFF]/90 text-white text-[9px] text-center py-0.5">主图</span>}
                   </div>
                 ))}
-                <label className="w-24 h-24 rounded-md border-2 border-dashed border-slate-300 hover:border-[#38BDF8] hover:bg-sky-50/40 cursor-pointer flex flex-col items-center justify-center text-slate-400 hover:text-[#38BDF8] transition-colors">
+                <label className="w-24 h-24 rounded-md border-2 border-dashed border-slate-300 hover:border-[#2E8BFF] hover:bg-sky-50/40 cursor-pointer flex flex-col items-center justify-center text-slate-400 hover:text-[#2E8BFF] transition-colors">
                   {uploadingImage ? (
-                    <div className="animate-spin h-5 w-5 border-2 border-[#38BDF8] border-t-transparent rounded-full" />
+                    <div className="animate-spin h-5 w-5 border-2 border-[#2E8BFF] border-t-transparent rounded-full" />
                   ) : (
                     <><ImagePlus className="h-5 w-5 mb-1" /><span className="text-[10px]">{product?.id && !useMockMode ? "上传到Storage" : "添加图片"}</span></>
                   )}
@@ -472,7 +472,7 @@ function ProductFormDialog({ open, onOpenChange, product, onSave, categories, us
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => { if (!form.name) { toast.error("请填写产品名称"); return; } onSave(form); }} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{product ? "保存修改" : "创建产品"}</Button>
+          <Button onClick={() => { if (!form.name) { toast.error("请填写产品名称"); return; } onSave(form); }} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">{product ? "保存修改" : "创建产品"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

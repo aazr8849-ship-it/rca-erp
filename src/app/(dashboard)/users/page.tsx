@@ -140,7 +140,7 @@ export default function UsersPage() {
       header: "姓名",
       render: (r) => (
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#38BDF8] text-white flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-[#2E8BFF] text-white flex items-center justify-center text-xs font-semibold">
             {r.name.charAt(0).toUpperCase()}
           </div>
           <span className="text-sm font-medium">{r.name}</span>
@@ -209,7 +209,7 @@ export default function UsersPage() {
         title="用户管理"
         description={`共 ${users.length} 个用户 · 管理员可创建员工账号并分配角色`}
         actions={
-          <Button onClick={() => setCreateOpen(true)} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">
+          <Button onClick={() => setCreateOpen(true)} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">
             <Plus className="h-3.5 w-3.5 mr-1" />
             创建用户
           </Button>
@@ -221,7 +221,7 @@ export default function UsersPage() {
         {Object.entries(ROLE_LABELS).map(([key, label]) => (
           <div key={key} className="bg-white rounded-lg p-3 border border-slate-200">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-3.5 w-3.5 text-[#38BDF8]" />
+              <Shield className="h-3.5 w-3.5 text-[#2E8BFF]" />
               <span className={`px-2 py-0.5 rounded text-xs ${ROLE_COLORS[key as UserRole]}`}>{label}</span>
             </div>
             <p className="text-[10px] text-slate-500">
@@ -276,7 +276,7 @@ export default function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
-            <Button onClick={handleCreate} disabled={creating} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{creating ? "创建中..." : "创建用户"}</Button>
+            <Button onClick={handleCreate} disabled={creating} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">{creating ? "创建中..." : "创建用户"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

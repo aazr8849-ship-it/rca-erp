@@ -96,20 +96,20 @@ export default function DashboardLayout({
 
   if (checking || !currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-gray-500 text-sm">正在加载...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <PWAInstallButton />
       <AutoUpdater />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-auto p-4 md:p-6 bg-gray-50">
+        <main className="flex-1 overflow-auto p-4 md:p-6 bg-background">
           {children}
         </main>
       </div>

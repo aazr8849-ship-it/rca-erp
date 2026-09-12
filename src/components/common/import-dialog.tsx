@@ -140,7 +140,7 @@ export function ImportDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-[#38BDF8]" />
+            <FileSpreadsheet className="h-4 w-4 text-[#2E8BFF]" />
             导入{moduleName}
           </DialogTitle>
         </DialogHeader>
@@ -172,14 +172,14 @@ export function ImportDialog({
             <div
               className={cn(
                 "border-2 border-dashed rounded-md p-8 text-center transition-colors cursor-pointer",
-                parsing ? "border-[#38BDF8] bg-sky-50/40" : "border-slate-300 hover:border-[#38BDF8] hover:bg-sky-50/40",
+                parsing ? "border-[#2E8BFF] bg-sky-50/40" : "border-slate-300 hover:border-[#2E8BFF] hover:bg-sky-50/40",
               )}
               onClick={() => !parsing && fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#38BDF8]", "bg-sky-50/40"); }}
-              onDragLeave={(e) => { e.currentTarget.classList.remove("border-[#38BDF8]", "bg-sky-50/40"); }}
+              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#2E8BFF]", "bg-sky-50/40"); }}
+              onDragLeave={(e) => { e.currentTarget.classList.remove("border-[#2E8BFF]", "bg-sky-50/40"); }}
               onDrop={(e) => {
                 e.preventDefault();
-                e.currentTarget.classList.remove("border-[#38BDF8]", "bg-sky-50/40");
+                e.currentTarget.classList.remove("border-[#2E8BFF]", "bg-sky-50/40");
                 if (e.dataTransfer.files[0]) {
                   if (fileInputRef.current) {
                     const dt = new DataTransfer();
@@ -192,8 +192,8 @@ export function ImportDialog({
             >
               {parsing ? (
                 <>
-                  <div className="inline-block animate-spin h-8 w-8 border-3 border-[#38BDF8] border-t-transparent rounded-full mb-2" />
-                  <div className="text-sm text-[#38BDF8] font-medium">正在解析文件...</div>
+                  <div className="inline-block animate-spin h-8 w-8 border-3 border-[#2E8BFF] border-t-transparent rounded-full mb-2" />
+                  <div className="text-sm text-[#2E8BFF] font-medium">正在解析文件...</div>
                 </>
               ) : (
                 <>
@@ -269,7 +269,7 @@ export function ImportDialog({
           <div className="py-2 space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-slate-700">
-                共解析到 <span className="font-bold text-[#38BDF8]">{parsedData.length}</span> 条数据
+                共解析到 <span className="font-bold text-[#2E8BFF]">{parsedData.length}</span> 条数据
               </div>
               <Button variant="ghost" size="sm" onClick={reset} className="text-xs">
                 <X className="h-3 w-3 mr-1" />重新上传
@@ -370,13 +370,13 @@ export function ImportDialog({
           {step === "preview" && (
             <>
               <Button variant="outline" onClick={reset}>重新上传</Button>
-              <Button onClick={handleImport} disabled={importing} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">
+              <Button onClick={handleImport} disabled={importing} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">
                 {importing ? "导入中..." : `确认导入 ${parsedData.length} 条`}
               </Button>
             </>
           )}
           {step === "result" && (
-            <Button onClick={handleClose} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">完成</Button>
+            <Button onClick={handleClose} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">完成</Button>
           )}
         </DialogFooter>
       </DialogContent>

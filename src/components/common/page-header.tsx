@@ -57,7 +57,7 @@ export function ActionButton({
       size={size}
       onClick={onClick}
       disabled={disabled}
-      className={cn(icon === "add" && "bg-[#38BDF8] hover:bg-[#0EA5E9] text-white", className)}
+      className={cn(icon === "add" && "bg-[#2E8BFF] hover:bg-[#0B4BB8] text-white", className)}
     >
       {Icon && <Icon className="h-3.5 w-3.5 mr-1" />}
       {children}

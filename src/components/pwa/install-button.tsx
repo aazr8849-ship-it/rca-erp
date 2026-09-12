@@ -63,7 +63,7 @@ export function PWAInstallButton() {
   if (showBanner) {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#38BDF8] text-white px-4 py-2 flex items-center justify-between text-sm shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#2E8BFF] text-white px-4 py-2 flex items-center justify-between text-sm shadow-lg">
         <div className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           <span>
@@ -77,7 +77,7 @@ export function PWAInstallButton() {
             <Button
               size="sm"
               variant="secondary"
-              className="h-7 bg-white text-[#38BDF8] hover:bg-white/90 text-xs"
+              className="h-7 bg-white text-[#2E8BFF] hover:bg-white/90 text-xs"
               onClick={handleInstall}
             >
               安装

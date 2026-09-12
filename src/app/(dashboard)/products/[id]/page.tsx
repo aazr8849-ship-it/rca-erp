@@ -56,7 +56,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="text-xs text-gray-500 mt-0.5">编码 {product.code} · OEM {product.oem_number || "-"} · 创建于 {formatDate(product.created_at)}</div>
           </div>
         </div>
-        <Button onClick={() => router.push("/products")} className="bg-[#38BDF8] hover:bg-[#0EA5E9]"><Pencil className="h-3.5 w-3.5 mr-1.5" />编辑信息</Button>
+        <Button onClick={() => router.push("/products")} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]"><Pencil className="h-3.5 w-3.5 mr-1.5" />编辑信息</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -66,9 +66,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="text-xs text-slate-500 mb-2">产品图片 ({product.image_urls.length})</div>
               <div className="flex flex-wrap gap-2">
                 {product.image_urls.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={`relative w-20 h-20 rounded-md overflow-hidden border-2 hover:border-[#38BDF8] transition-colors ${i === 0 ? "border-[#38BDF8]" : "border-slate-200"}`}>
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={`relative w-20 h-20 rounded-md overflow-hidden border-2 hover:border-[#2E8BFF] transition-colors ${i === 0 ? "border-[#2E8BFF]" : "border-slate-200"}`}>
                     <img src={url} alt={`产品图片${i + 1}`} className="w-full h-full object-cover" />
-                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#38BDF8]/90 text-white text-[9px] text-center py-0.5">主图</span>}
+                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-[#2E8BFF]/90 text-white text-[9px] text-center py-0.5">主图</span>}
                   </a>
                 ))}
               </div>
@@ -94,7 +94,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <InfoCard title="价格信息">
             <div className="space-y-3">
               <div className="bg-orange-50 rounded-md p-3"><div className="text-xs text-gray-600">成本价</div><div className="text-xl font-bold text-orange-600 mt-1">{formatCurrency(product.cost_price, "CNY")}</div></div>
-              <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">销售价</div><div className="text-xl font-bold text-[#38BDF8] mt-1">{formatCurrency(product.sale_price, "USD")}</div></div>
+              <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">销售价</div><div className="text-xl font-bold text-[#2E8BFF] mt-1">{formatCurrency(product.sale_price, "USD")}</div></div>
               <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">毛利率</div><div className="text-xl font-bold text-green-600 mt-1">{product.sale_price > 0 ? (((product.sale_price * 7.25 - product.cost_price) / (product.sale_price * 7.25)) * 100).toFixed(1) : 0}%</div></div>
             </div>
           </InfoCard>

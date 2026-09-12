@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, Ship as ShipIcon } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { GenericFormDialog } from "@/components/common/generic-form-dialog";
+import { createShipment } from "@/lib/api/shipments";
 import { PageHeader, ActionButton } from "@/components/common/page-header";
 import { FilterBar } from "@/components/common/filter-bar";
 import { SearchInput } from "@/components/common/search-input";
@@ -19,6 +21,7 @@ export default function ShipmentsPage() {
   const router = useRouter();
   const { shipments } = useStore();
   const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");
   const [methodFilter, setMethodFilter] = useState("__all__");
 
@@ -31,8 +34,8 @@ export default function ShipmentsPage() {
   }, [shipments, search, statusFilter, methodFilter]);
 
   const columns: Column<Shipment>[] = [
-    { key: "code", header: "发货号", width: "140px", render: (r) => <Link href={`/shipments/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
-    { key: "order_code", header: "订单号", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.order_code}</Link> : "-" },
+    { key: "code", header: "发货号", width: "140px", render: (r) => <Link href={`/shipments/${r.id}`} className="text-xs font-mono text-[#2E8BFF] hover:underline">{r.code}</Link> },
+    { key: "order_code", header: "订单号", width: "140px", render: (r) => r.order_code ? <Link href={`/orders/${r.order_id}`} className="text-xs font-mono text-[#2E8BFF] hover:underline">{r.order_code}</Link> : "-" },
     { key: "customer_name", header: "客户" },
     { key: "shipment_date", header: "发货日期", width: "110px", render: (r) => <span className="text-xs">{formatDate(r.shipment_date)}</span> },
     { key: "shipping_method", header: "运输方式", width: "100px", render: (r) => <span className="text-xs">{SHIPPING_METHOD_LABELS[r.shipping_method]}</span> },
@@ -42,8 +45,25 @@ export default function ShipmentsPage() {
     { key: "actions", header: "操作", width: "80px", align: "center", render: (r) => <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); router.push(`/shipments/${r.id}`); }}><Eye className="h-3.5 w-3.5" /></Button> },
   ];
 
+  const shipmentFormConfig = {
+    moduleName: "发货单",
+    fields: [
+      { key: "order_id", label: "关联订单", type: "entity-order", required: true },
+      { key: "shipping_method", label: "运输方式", type: "select", required: true, options: [
+        { value: "sea", label: "海运" }, { value: "air", label: "空运" },
+        { value: "express", label: "快递" }, { value: "land", label: "陆运" },
+      ], defaultValue: "land" },
+      { key: "tracking_number", label: "运单号", type: "text", placeholder: "运单号" },
+      { key: "container_number", label: "集装箱号", type: "text", placeholder: "集装箱号" },
+      { key: "total_weight", label: "总重量(kg)", type: "number", defaultValue: 0 },
+      { key: "total_cartons", label: "总箱数", type: "number", defaultValue: 0 },
+    ],
+    onSubmit: async (data: any) => { await createShipment(data); },
+  };
+
   return (
     <div>
+      <GenericFormDialog open={createOpen} onOpenChange={setCreateOpen} config={shipmentFormConfig} onSuccess={() => window.location.reload()} />
       <PageHeader title="发货计划" description={`共 ${filtered.length} 条发货记录`} actions={<>
         <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "发货列表", "发货", [
           { key: "code", label: "发货号" },
@@ -59,7 +79,7 @@ export default function ShipmentsPage() {
           { key: "status", label: "状态" },
           { key: "created_at", label: "创建时间" },
         ]); }}>导出Excel</ActionButton>
-        <ActionButton icon="add" onClick={() => alert("请通过订单详情页创建发货单")}>新建发货</ActionButton>
+        <ActionButton icon="add" onClick={() => setCreateOpen(true)}>新建发货</ActionButton>
       </>
       } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setMethodFilter("__all__"); }}>

@@ -67,16 +67,16 @@ export function AutoUpdater() {
   if (!showUpdate) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-[#38BDF8] p-4 max-w-sm animate-in slide-in-from-bottom">
+    <div className="fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-[#2E8BFF] p-4 max-w-sm animate-in slide-in-from-bottom">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#38BDF8]/10 flex items-center justify-center shrink-0">
-          <RefreshCw className="h-5 w-5 text-[#38BDF8]" />
+        <div className="w-10 h-10 rounded-full bg-[#2E8BFF]/10 flex items-center justify-center shrink-0">
+          <RefreshCw className="h-5 w-5 text-[#2E8BFF]" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold text-slate-800">发现新版本</div>
           <p className="text-xs text-slate-500 mt-0.5">系统已更新，点击刷新获取最新功能</p>
           <div className="flex gap-2 mt-3">
-            <Button size="sm" className="h-7 text-xs bg-[#38BDF8] hover:bg-[#0EA5E9]" onClick={handleUpdate}>
+            <Button size="sm" className="h-7 text-xs bg-[#2E8BFF] hover:bg-[#0B4BB8]" onClick={handleUpdate}>
               立即更新
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowUpdate(false)}>

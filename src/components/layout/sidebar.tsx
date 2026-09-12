@@ -48,7 +48,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-between h-[60px] px-5 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2" onClick={onClose}>
-            <div className="flex items-center justify-center w-8 h-8 rounded bg-[#38BDF8] text-white font-bold text-sm">
+            <div className="flex items-center justify-center w-8 h-8 rounded bg-[#2E8BFF] text-white font-bold text-sm">
               R
             </div>
             <span className="text-base font-semibold tracking-wide">
@@ -81,12 +81,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     className={cn(
                       "relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors",
                       isActive
-                        ? "bg-[#38BDF8] text-white font-medium"
+                        ? "bg-[#2E8BFF] text-white font-medium"
                         : "text-white/85 hover:bg-white/10 hover:text-white",
                     )}
                   >
                     {isActive && (
-                      <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#38BDF8] -translate-x-2" />
+                      <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#2E8BFF] -translate-x-2" />
                     )}
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="truncate">{item.label}</span>

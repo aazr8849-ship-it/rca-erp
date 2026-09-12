@@ -50,7 +50,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const poColumns: Column<PurchaseOrder>[] = [
-    { key: "code", header: "采购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+    { key: "code", header: "采购号", render: (r) => <Link href={`/purchases/${r.id}`} className="text-[#2E8BFF] hover:underline text-xs font-mono">{r.code}</Link> },
     { key: "order_date", header: "下单日期", render: (r) => formatDate(r.order_date) },
     { key: "total_amount", header: "金额", align: "right", render: (r) => formatCurrency(r.total_amount, r.currency) },
     { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
@@ -78,7 +78,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
             <div className="text-xs text-gray-500 mt-0.5">编码 {supplier.code} · 创建于 {formatDate(supplier.created_at)}</div>
           </div>
         </div>
-        <Button onClick={() => router.push("/suppliers")} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">编辑信息</Button>
+        <Button onClick={() => router.push("/suppliers")} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">编辑信息</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -104,7 +104,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
 
         <InfoCard title="业务概览">
           <div className="space-y-3">
-            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">采购订单</div><div className="text-2xl font-bold text-[#38BDF8] mt-1">{supplierPOs.length}</div></div>
+            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">采购订单</div><div className="text-2xl font-bold text-[#2E8BFF] mt-1">{supplierPOs.length}</div></div>
             <div className="bg-orange-50 rounded-md p-3"><div className="text-xs text-gray-600">应付账款</div><div className="text-2xl font-bold text-orange-600 mt-1">{supplierPays.length}</div></div>
             <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">累计采购金额</div><div className="text-xl font-bold text-green-600 mt-1">{formatCurrency(supplierPOs.reduce((s, p) => s + Number(p.total_amount), 0), "CNY")}</div></div>
           </div>
@@ -119,7 +119,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
         </TabsList>
         <TabsContent value="products" className="mt-3">
           <GenericDataTable data={supplierProducts} columns={[
-            { key: "code", header: "编码", render: (r) => <Link href={`/products/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+            { key: "code", header: "编码", render: (r) => <Link href={`/products/${r.id}`} className="text-[#2E8BFF] hover:underline text-xs font-mono">{r.code}</Link> },
             { key: "name", header: "产品名称", render: (r) => <Link href={`/products/${r.id}`} className="text-sm hover:underline">{r.name}</Link> },
             { key: "oem_number", header: "OEM号", render: (r) => <span className="text-xs font-mono">{r.oem_number}</span> },
             { key: "brand", header: "品牌" },

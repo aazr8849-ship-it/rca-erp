@@ -33,7 +33,7 @@ export function StatusBadge({ status, type = "status", customLabel, className }:
   const label = customLabel || getStatusLabel(status);
 
   const colorClassMap: Record<string, string> = {
-    default: "bg-[#38BDF8] text-white hover:bg-[#38BDF8]",
+    default: "bg-[#2E8BFF] text-white hover:bg-[#2E8BFF]",
     secondary: "bg-gray-100 text-gray-700 hover:bg-gray-100",
     destructive: "bg-red-100 text-red-700 hover:bg-red-100",
     outline: "bg-white text-gray-600 border border-gray-300 hover:bg-white",

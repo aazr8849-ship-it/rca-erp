@@ -80,16 +80,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-stretch bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]">
+    <div className="min-h-screen flex items-stretch bg-gradient-to-br from-[#050F1F] via-[#0A1A33] to-[#050F1F]">
       {/* 左侧品牌区（桌面端） */}
       <div className="hidden lg:flex flex-col justify-between flex-1 px-16 py-12 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-[#38BDF8] blur-3xl" />
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-[#0B4BB8] blur-3xl" />
           <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-[#C4654A] blur-3xl" />
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#38BDF8] text-white font-bold text-xl">R</div>
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#0B4BB8] text-white font-bold text-xl">R</div>
             <div>
               <div className="text-2xl font-bold tracking-wide">RCA6.0 ERP</div>
               <div className="text-xs text-white/60">汽配外贸企业资源计划系统</div>
@@ -111,7 +111,7 @@ export default function LoginPage() {
               { label: "状态机", value: "5+" },
             ].map((s) => (
               <div key={s.label} className="border border-white/10 rounded-lg p-3 bg-white/5 backdrop-blur-sm">
-                <div className="text-2xl font-bold text-[#38BDF8]">{s.value}</div>
+                <div className="text-2xl font-bold text-[#2E8BFF]">{s.value}</div>
                 <div className="text-xs text-white/60 mt-1">{s.label}</div>
               </div>
             ))}
@@ -126,7 +126,7 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* 移动端 Logo */}
             <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#38BDF8] text-white font-bold text-lg">R</div>
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#0B4BB8] text-white font-bold text-lg">R</div>
               <div className="text-xl font-bold text-gray-800">RCA6.0 ERP</div>
             </div>
 
@@ -154,7 +154,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@rca-erp.com"
-                    className="w-full pl-9 pr-3 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
+                    className="w-full pl-9 pr-3 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2E8BFF] focus:border-transparent"
                     required
                   />
                 </div>
@@ -169,7 +169,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="请输入密码"
-                    className="w-full pl-9 pr-10 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#38BDF8] focus:border-transparent"
+                    className="w-full pl-9 pr-10 h-11 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2E8BFF] focus:border-transparent"
                     required
                   />
                   <button
@@ -187,13 +187,13 @@ export default function LoginPage() {
                   <input type="checkbox" defaultChecked className="rounded border-gray-300" />
                   记住我
                 </label>
-                <a className="text-[#38BDF8] hover:underline cursor-pointer">忘记密码？</a>
+                <a className="text-[#2E8BFF] hover:underline cursor-pointer">忘记密码？</a>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-md bg-[#38BDF8] hover:bg-[#0EA5E9] text-white text-sm font-medium transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-md bg-[#0B4BB8] hover:bg-[#0B4BB8] text-white text-sm font-medium transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {loading ? (<><Loader2 size={16} className="animate-spin" />登录中...</>) : ("登 录")}
               </button>

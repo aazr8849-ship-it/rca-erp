@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, Eye, FileText, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { GenericFormDialog } from "@/components/common/generic-form-dialog";
+import { createInquiry } from "@/lib/api/inquiries";
 import { PageHeader, ActionButton } from "@/components/common/page-header";
 import { FilterBar } from "@/components/common/filter-bar";
 import { SearchInput } from "@/components/common/search-input";
@@ -19,6 +21,7 @@ export default function InquiriesPage() {
   const router = useRouter();
   const { inquiries, customers, addAuditLog } = useStore();
   const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");
   const [priorityFilter, setPriorityFilter] = useState("__all__");
   const [page, setPage] = useState(1);
@@ -35,7 +38,7 @@ export default function InquiriesPage() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns: Column<Inquiry>[] = [
-    { key: "code", header: "询盘号", width: "140px", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-xs font-mono text-[#38BDF8] hover:underline">{r.code}</Link> },
+    { key: "code", header: "询盘号", width: "140px", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-xs font-mono text-[#2E8BFF] hover:underline">{r.code}</Link> },
     { key: "customer_name", header: "客户", width: "180px", render: (r) => <Link href={`/customers/${r.customer_id}`} className="text-sm hover:underline">{r.customer_name}</Link> },
     { key: "subject", header: "主题", render: (r) => <span className="text-sm">{r.subject}</span> },
     { key: "source", header: "来源", width: "80px", render: (r) => <span className="text-xs">{SOURCE_LABELS[r.source]}</span> },
@@ -58,8 +61,32 @@ export default function InquiriesPage() {
   };
   const STATUS_LABELS: Record<string, string> = { pending: "处理中", processing: "已报价", quoted: "已关闭", closed: "已关闭", cancelled: "已取消" };
 
+  const inquiryFormConfig = {
+    moduleName: "询盘",
+    fields: [
+      { key: "customer_id", label: "客户", type: "entity-customer", required: true },
+      { key: "subject", label: "询盘主题", type: "text", required: true, placeholder: "如：前制动片询价" },
+      { key: "source", label: "来源", type: "select", options: [
+        { value: "email", label: "邮件" }, { value: "phone", label: "电话" },
+        { value: "exhibition", label: "展会" }, { value: "website", label: "网站" }, { value: "wechat", label: "微信" },
+      ], defaultValue: "email" },
+      { key: "priority", label: "优先级", type: "select", options: [
+        { value: "high", label: "高" }, { value: "medium", label: "中" }, { value: "low", label: "低" },
+      ], defaultValue: "medium" },
+      { key: "notes", label: "备注", type: "textarea", placeholder: "询盘备注" },
+    ],
+    itemFields: [
+      { key: "product_id", label: "产品", type: "entity-product" },
+      { key: "quantity", label: "数量", type: "number", defaultValue: 1 },
+      { key: "target_price", label: "目标价", type: "number", defaultValue: 0 },
+    ],
+    itemLabel: "询盘明细",
+    onSubmit: async (data: any) => { await createInquiry(data); },
+  };
+
   return (
     <div>
+      <GenericFormDialog open={createOpen} onOpenChange={setCreateOpen} config={inquiryFormConfig} onSuccess={() => window.location.reload()} />
       <PageHeader title="询盘管理" description={`共 ${filtered.length} 条询盘记录`} actions={
         <>
           <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "询盘列表", "询盘", [
@@ -71,7 +98,7 @@ export default function InquiriesPage() {
             { key: "status", label: "状态" },
             { key: "created_at", label: "创建时间" },
           ]); }}>导出Excel</ActionButton>
-          <ActionButton icon="add" onClick={() => toast.info("询盘创建功能：请通过客户详情页或新建询盘按钮创建")}>新建询盘</ActionButton>
+          <ActionButton icon="add" onClick={() => setCreateOpen(true)}>新建询盘</ActionButton>
         </>
       } />
       <FilterBar onReset={() => { setSearch(""); setStatusFilter("__all__"); setPriorityFilter("__all__"); setPage(1); }}>

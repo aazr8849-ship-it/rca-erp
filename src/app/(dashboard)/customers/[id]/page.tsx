@@ -49,7 +49,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const inquiryColumns: Column<Inquiry>[] = [
-    { key: "code", header: "询盘号", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+    { key: "code", header: "询盘号", render: (r) => <Link href={`/inquiries/${r.id}`} className="text-[#2E8BFF] hover:underline text-xs font-mono">{r.code}</Link> },
     { key: "subject", header: "主题", render: (r) => <span className="text-sm">{r.subject}</span> },
     { key: "source", header: "来源", render: (r) => <span className="text-xs">{SOURCE_LABELS[r.source]}</span> },
     { key: "priority", header: "优先级", render: (r) => <StatusBadge type="priority" status={r.priority} /> },
@@ -58,7 +58,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   ];
 
   const quotationColumns: Column<Quotation>[] = [
-    { key: "code", header: "报价号", render: (r) => <Link href={`/quotations/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+    { key: "code", header: "报价号", render: (r) => <Link href={`/quotations/${r.id}`} className="text-[#2E8BFF] hover:underline text-xs font-mono">{r.code}</Link> },
     { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
     { key: "total_amount", header: "金额", align: "right", render: (r) => <span className="text-sm font-medium">{formatCurrency(r.total_amount, r.currency)}</span> },
     { key: "valid_until", header: "有效期至", render: (r) => <span className="text-xs">{formatDate(r.valid_until)}</span> },
@@ -66,7 +66,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   ];
 
   const orderColumns: Column<Order>[] = [
-    { key: "code", header: "订单号", render: (r) => <Link href={`/orders/${r.id}`} className="text-[#38BDF8] hover:underline text-xs font-mono">{r.code}</Link> },
+    { key: "code", header: "订单号", render: (r) => <Link href={`/orders/${r.id}`} className="text-[#2E8BFF] hover:underline text-xs font-mono">{r.code}</Link> },
     { key: "status", header: "状态", render: (r) => <StatusBadge status={r.status} /> },
     { key: "total_amount", header: "金额", align: "right", render: (r) => <span className="text-sm font-medium">{formatCurrency(r.total_amount, r.currency)}</span> },
     { key: "order_date", header: "下单日期", render: (r) => <span className="text-xs">{formatDate(r.order_date)}</span> },
@@ -87,7 +87,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <div className="text-xs text-gray-500 mt-0.5">编码 {customer.code} · 创建于 {formatDate(customer.created_at)}</div>
           </div>
         </div>
-        <Button onClick={() => router.push("/customers")} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">编辑信息</Button>
+        <Button onClick={() => router.push("/customers")} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">编辑信息</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -113,7 +113,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
         <InfoCard title="业务概览">
           <div className="space-y-3">
-            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">询盘总数</div><div className="text-2xl font-bold text-[#38BDF8] mt-1">{customerInquiries.length}</div></div>
+            <div className="bg-blue-50 rounded-md p-3"><div className="text-xs text-gray-600">询盘总数</div><div className="text-2xl font-bold text-[#2E8BFF] mt-1">{customerInquiries.length}</div></div>
             <div className="bg-purple-50 rounded-md p-3"><div className="text-xs text-gray-600">报价总数</div><div className="text-2xl font-bold text-purple-600 mt-1">{customerQuotations.length}</div></div>
             <div className="bg-orange-50 rounded-md p-3"><div className="text-xs text-gray-600">订单总数</div><div className="text-2xl font-bold text-orange-600 mt-1">{customerOrders.length}</div></div>
             <div className="bg-green-50 rounded-md p-3"><div className="text-xs text-gray-600">累计订单金额</div><div className="text-xl font-bold text-green-600 mt-1">{formatCurrency(customerOrders.reduce((s, o) => s + Number(o.total_amount), 0), customer.preferred_currency)}</div></div>

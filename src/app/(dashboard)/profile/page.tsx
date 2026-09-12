@@ -74,7 +74,7 @@ export default function ProfilePage() {
         description="查看和编辑您的个人资料"
         actions={
           !editing ? (
-            <Button onClick={() => setEditing(true)} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">
+            <Button onClick={() => setEditing(true)} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">
               <User className="h-3.5 w-3.5 mr-1" />
               编辑信息
             </Button>
@@ -83,7 +83,7 @@ export default function ProfilePage() {
               <Button variant="outline" onClick={() => { setEditing(false); setForm({ name: currentUser?.name || "", email: currentUser?.email || "" }); }}>
                 取消
               </Button>
-              <Button onClick={handleSave} disabled={saving} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">
+              <Button onClick={handleSave} disabled={saving} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {saving ? "保存中..." : "保存"}
               </Button>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
         {/* 头像和基本信息 */}
         <InfoCard title="账户信息">
           <div className="flex flex-col items-center text-center py-4">
-            <div className="w-20 h-20 rounded-full bg-[#38BDF8] text-white flex items-center justify-center text-2xl font-bold mb-3">
+            <div className="w-20 h-20 rounded-full bg-[#2E8BFF] text-white flex items-center justify-center text-2xl font-bold mb-3">
               {currentUser?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="text-lg font-semibold text-slate-800">{currentUser?.name}</div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { toast } from "sonner";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -137,6 +138,9 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* 右侧：通知 + 用户 */}
       <div className="flex items-center gap-2">
+        {/* 深色模式切换 */}
+        <ThemeToggle />
+
         {/* 通知铃铛 */}
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>
           <PopoverTrigger asChild>
@@ -258,7 +262,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-[#38BDF8] text-white flex items-center justify-center text-xs font-semibold">
+              <div className="w-8 h-8 rounded-full bg-[#2E8BFF] text-white flex items-center justify-center text-xs font-semibold">
                 {currentUser ? getInitials(currentUser.name) : "U"}
               </div>
               <div className="hidden md:block text-left">

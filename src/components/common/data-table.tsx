@@ -122,7 +122,7 @@ export function GenericDataTable<T>({
                   <Checkbox
                     checked={allChecked || (someChecked && "indeterminate")}
                     onCheckedChange={handleSelectAll}
-                    className="border-white/60 data-[state=checked]:bg-[#38BDF8] data-[state=checked]:border-[#38BDF8]"
+                    className="border-white/60 data-[state=checked]:bg-[#2E8BFF] data-[state=checked]:border-[#2E8BFF]"
                   />
                 </TableHead>
               )}
@@ -152,7 +152,7 @@ export function GenericDataTable<T>({
                         className={cn(
                           "transition-colors",
                           sortKey === col.key
-                            ? "text-[#38BDF8] bg-white"
+                            ? "text-[#2E8BFF] bg-white"
                             : "text-white/60",
                         )}
                       />
@@ -201,7 +201,7 @@ export function GenericDataTable<T>({
                         <Checkbox
                           checked={checked}
                           onCheckedChange={() => handleRowSelect(id)}
-                          className="data-[state=checked]:bg-[#38BDF8] data-[state=checked]:border-[#38BDF8]"
+                          className="data-[state=checked]:bg-[#2E8BFF] data-[state=checked]:border-[#2E8BFF]"
                         />
                       </TableCell>
                     )}

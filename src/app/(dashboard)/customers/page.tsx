@@ -172,7 +172,7 @@ export default function CustomersPage() {
   const columns: Column<Customer>[] = [
     { key: "code", header: "客户编码", width: "120px", render: (row) => <span className="font-mono text-xs">{row.code}</span> },
     { key: "name", header: "客户名称", render: (row) => (
-      <Link href={`/customers/${row.id}`} className="text-sm font-medium text-[#38BDF8] hover:underline">{row.name}</Link>
+      <Link href={`/customers/${row.id}`} className="text-sm font-medium text-[#2E8BFF] hover:underline">{row.name}</Link>
     ) },
     { key: "contact_person", header: "联系人", width: "100px", render: (row) => (
       <div><div className="text-sm">{row.contact_person}</div><div className="text-xs text-gray-500">{row.contact_phone || "-"}</div></div>
@@ -376,7 +376,7 @@ function CustomerFormDialog({ open, onOpenChange, customer, onSave }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => { if (!form.name || !form.contact_person || !form.country) { toast.error("请填写必填项"); return; } onSave(form); }} className="bg-[#38BDF8] hover:bg-[#0EA5E9]">{customer ? "保存修改" : "创建客户"}</Button>
+          <Button onClick={() => { if (!form.name || !form.contact_person || !form.country) { toast.error("请填写必填项"); return; } onSave(form); }} className="bg-[#2E8BFF] hover:bg-[#0B4BB8]">{customer ? "保存修改" : "创建客户"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
