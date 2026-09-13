@@ -69,6 +69,20 @@ export function GenericFormDialog({ open, onOpenChange, config, onSuccess }: Gen
         if (input) domForm[f.key] = f.type === 'number' ? Number((input as any).value) : (input as any).value;
       } else if (f.type === 'select') {
         domForm[f.key] = form[f.key] || f.defaultValue;
+      } else if (f.type === 'entity-customer' || f.type === 'entity-supplier' || f.type === 'entity-product' || f.type === 'entity-order') {
+        // 从combobox按钮的文字判断是否已选择
+        const comboboxes = document.querySelectorAll('button[role=combobox]');
+        let comboIdx = 0;
+        config.fields.forEach((ff, j) => {
+          if (ff.type.startsWith('entity-') && j < i) comboIdx++;
+        });
+        const combo = comboboxes[comboIdx];
+        if (combo && combo.textContent && combo.textContent.trim() !== '选择客户...' && combo.textContent.trim() !== '选择供应商...' && combo.textContent.trim() !== '选择产品...' && combo.textContent.trim() !== '选择订单...') {
+          // 已选择，从form获取id
+          domForm[f.key] = form[f.key];
+        } else {
+          domForm[f.key] = form[f.key];
+        }
       } else {
         domForm[f.key] = form[f.key];
       }
