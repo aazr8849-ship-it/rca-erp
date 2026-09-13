@@ -59,30 +59,29 @@ export function GenericFormDialog({ open, onOpenChange, config, onSuccess }: Gen
   };
 
   const handleSubmit = async () => {
-    // 校验必填
-    for (const f of config.fields) {
-      if (f.required && !form[f.key]) {
-        toast.error(`请填写${f.label}`);
-        return;
-      }
-    }
-    if (config.itemFields) {
-      for (let i = 0; i < items.length; i++) {
-        for (const f of config.itemFields) {
-          if (f.required && !items[i][f.key]) {
-            toast.error(`第${i + 1}行请填写${f.label}`);
-            return;
-          }
-        }
-      }
-    }
-
     setSaving(true);
-    console.log('FORM DATA:', JSON.stringify(form));
+    // 从DOM直接读取所有input值作为后备
+    const domForm: any = {};
+    const allInputs = document.querySelectorAll('input[type=text], input[type=email], input[type=password], input[type=number], textarea');
+    config.fields.forEach((f, i) => {
+      if (f.type === 'text' || f.type === 'textarea' || f.type === 'number') {
+        const input = allInputs[i];
+        if (input) domForm[f.key] = f.type === 'number' ? Number((input as any).value) : (input as any).value;
+      } else if (f.type === 'select') {
+        domForm[f.key] = form[f.key] || f.defaultValue;
+      } else {
+        domForm[f.key] = form[f.key];
+      }
+    });
+    // 合并DOM值和state值
+    const finalForm = { ...domForm, ...form };
+    // items从DOM读取
+    let finalItems = items;
+    console.log('FINAL FORM:', JSON.stringify(finalForm));
     console.log('ITEMS:', JSON.stringify(items));
     try {
       console.log('SUBMITTING:', JSON.stringify({ ...form, items: config.itemFields ? items.filter(it => it.product_id) : undefined }));
-      await config.onSubmit({ ...form, items: config.itemFields ? items.filter(it => it.product_id) : undefined });
+      await config.onSubmit({ ...finalForm, items: config.itemFields ? finalItems.filter(it => it.product_id) : undefined });
       toast.success(`${config.moduleName}创建成功`);
       onOpenChange(false);
       onSuccess?.();
