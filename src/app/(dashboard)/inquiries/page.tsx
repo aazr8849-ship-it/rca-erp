@@ -86,7 +86,7 @@ export default function InquiriesPage() {
 
   return (
     <div>
-      <GenericFormDialog open={createOpen} onOpenChange={setCreateOpen} config={inquiryFormConfig} onSuccess={() => window.location.reload()} />
+      <GenericFormDialog open={createOpen} onOpenChange={setCreateOpen} config={inquiryFormConfig} onSuccess={() => { queryClient.invalidateQueries({ queryKey: ["inquiries"] }); window.location.reload(); }} />
       <PageHeader title="询盘管理" description={`共 ${filtered.length} 条询盘记录`} actions={
         <>
           <ActionButton icon="export" onClick={async () => { const { exportToExcel } = await import("@/lib/excel-utils"); exportToExcel(filtered, "询盘列表", "询盘", [
