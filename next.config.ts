@@ -24,19 +24,12 @@ export default withPWA({
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        urlPattern: /^https?.*\/api\/.*/,
+        urlPattern: /supabase\.co/,
         handler: "NetworkOnly",
       },
       {
-        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
+        urlPattern: /\/api\//,
         handler: "NetworkOnly",
-      },
-      {
-        urlPattern: /\.(?:js|css)$/,
-        handler: "StaleWhileRevalidate",
-        options: {
-          cacheName: "static-resources",
-        },
       },
     ],
   },
