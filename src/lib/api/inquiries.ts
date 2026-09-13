@@ -3,6 +3,9 @@ const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
 
 async function supabaseRequest(path: string, method: string, body?: any) {
+  const fullUrl = SUPABASE_URL + path;
+  console.log('FETCH URL:', fullUrl);
+  try {
   const res = await fetch(SUPABASE_URL + path, {
     method,
     headers: {
@@ -13,11 +16,16 @@ async function supabaseRequest(path: string, method: string, body?: any) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  console.log('FETCH RES:', res.status);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: "请求失败" }));
     throw new Error(err.message || `HTTP ${res.status}`);
   }
   return await res.json();
+  } catch(e) {
+    console.error('FETCH ERROR:', e.message, fullUrl);
+    throw e;
+  }
 }
 
 export async function createInquiry(input: any): Promise<any> {
