@@ -122,7 +122,7 @@ export function GenericFormDialog({ open, onOpenChange, config, onSuccess }: Gen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-50">
         <DialogHeader>
           <DialogTitle>新建{config.moduleName}</DialogTitle>
         </DialogHeader>
