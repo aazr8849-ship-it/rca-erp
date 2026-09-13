@@ -1,32 +1,47 @@
-// 报价API
-import { supabase } from "@/lib/supabase/client";
-import type { Quotation } from "@/lib/types";
+// quotations API - 直接用fetch
+const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
 
-function check() { if (!supabase) throw new Error("Supabase未配置"); return supabase; }
+async function supabaseFetch(table: string, method: string, body?: any, query?: string) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query || ""}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": method === "POST" ? "return=representation" : undefined,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "请求失败");
+  }
+  return await res.json();
+}
 
-export async function createQuotation(input: any): Promise<Quotation> {
-  const client = check();
+export async function createQuotation(input: any): Promise<any> {
   const year = new Date().getFullYear();
-  const { count } = await client.from("quotations").select("*", { count: "exact", head: true }).like("code", `QT-${year}-%`);
-  const code = `QT-${year}-${String((count ?? 0) + 1).padStart(4, "0")}`;
-  
+  const existing = await supabaseFetch("quotations", "GET", null, `?select=code&code=like.QT-${year}-%`);
+  const seq = String((existing?.length || 0) + 1).padStart(4, "0");
+  const code = `QT-${year}-${seq}`;
   const validUntil = new Date(); validUntil.setDate(validUntil.getDate() + 30);
   const totalAmount = (input.items || []).reduce((sum: number, it: any) => sum + (Number(it.quantity) * Number(it.unit_price || 0)), 0);
   
-  const { data: quotation } = await client.from("quotations").insert({
-    code, customer_id: input.customer_id, inquiry_id: input.inquiry_id || null,
-    pricing_status: input.items?.length > 0 ? "priced" : "pending",
+  const [quotation] = await supabaseFetch("quotations", "POST", {
+    code, customer_id: input.customer_id, pricing_status: input.items?.length > 0 ? "priced" : "pending",
     status: "draft", total_amount: totalAmount, currency: input.currency || "USD",
     valid_until: validUntil.toISOString().split("T")[0],
     trade_terms: input.trade_terms || "FOB", payment_terms: input.payment_terms || "T/T",
-  }).select().single();
+  });
   
   if (input.items?.length > 0 && quotation) {
-    const items = input.items.map((it: any) => ({
+    const items = input.items.filter((it: any) => it.product_id).map((it: any) => ({
       quotation_id: quotation.id, product_id: it.product_id,
       quantity: it.quantity, unit: it.unit || "个", unit_price: it.unit_price || 0,
     }));
-    await client.from("quotation_items").insert(items);
+    if (items.length > 0) await supabaseFetch("quotation_items", "POST", items);
   }
-  return quotation as Quotation;
+  return quotation;
 }
