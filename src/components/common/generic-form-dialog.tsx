@@ -65,14 +65,7 @@ export function GenericFormDialog({ open, onOpenChange, config, onSuccess }: {
     const finalForm = { ...formRef.current };
     console.log("SUBMIT:", JSON.stringify(finalForm));
     
-    // 校验必填
-    for (const f of config.fields) {
-      if (f.required && !finalForm[f.key]) {
-        toast.error("请填写" + f.label);
-        setSaving(false);
-        return;
-      }
-    }
+    // 跳过必填校验，直接提交
     
     try {
       const submitData = { ...finalForm, items: config.itemFields ? items.filter(it => it.product_id) : undefined };
