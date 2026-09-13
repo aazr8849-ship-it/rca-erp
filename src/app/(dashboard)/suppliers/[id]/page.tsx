@@ -17,9 +17,7 @@ import { StarRating } from "../page";
 import type { PurchaseOrder, Payable } from "@/lib/types";
 
 const useSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://") && (key.startsWith("sb_publishable_") || key.startsWith("eyJ")) && key.length > 30);
+  return true; // 总是启用Supabase（有fallback配置）
 };
 
 export default function SupplierDetailPage({ params }: { params: Promise<{ id: string }> }) {

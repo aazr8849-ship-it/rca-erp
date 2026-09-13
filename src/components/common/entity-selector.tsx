@@ -4,14 +4,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Search } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+
+// Supabase配置（publishable key是公开的，可以硬编码）
+const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
+
+async function fetchTable(table: string, search: string, searchFields: string[]) {
+  let url = `${SUPABASE_URL}/rest/v1/${table}?select=*&limit=20`;
+  if (search && searchFields.length > 0) {
+    const filters = searchFields.map(f => `${f}.ilike.%${search}%`).join(",");
+    url += `&or=${filters}`;
+  }
+  const res = await fetch(url, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!res.ok) return [];
+  return await res.json();
+}
 
 interface EntitySelectorProps {
   table: string;
   value: string;
   onChange: (id: string, name: string, extra?: any) => void;
   placeholder: string;
-  label?: string;
   searchFields?: string[];
   displayFields?: string[];
 }
@@ -25,32 +40,30 @@ export function EntitySelector({
   const [selectedName, setSelectedName] = useState("");
 
   useEffect(() => {
-    if (value && items.length === 0) {
-      fetchData();
-    }
+    if (value) fetchData("");
   }, [value]);
 
   useEffect(() => {
-    if (open) fetchData();
+    if (open) fetchData(search);
   }, [open]);
 
   useEffect(() => {
-    if (open && search !== "") fetchData();
+    if (open && search !== "") {
+      const timer = setTimeout(() => fetchData(search), 300);
+      return () => clearTimeout(timer);
+    }
   }, [search]);
 
-  const fetchData = async () => {
-    if (!supabase) return;
-    let query = supabase.from(table).select("*").is("deleted_at", null).limit(20);
-    if (search) {
-      const filters = searchFields.map(f => `${f}.ilike.%${search}%`).join(",");
-      query = query.or(filters);
-    }
-    const { data } = await query;
-    setItems(data || []);
-    // 找到当前选中项的名称
-    if (value && data) {
-      const found = data.find((d: any) => d.id === value);
-      if (found) setSelectedName(found[displayFields[0]] || "");
+  const fetchData = async (s: string) => {
+    try {
+      const data = await fetchTable(table, s, searchFields);
+      setItems(data || []);
+      if (value && data) {
+        const found = data.find((d: any) => d.id === value);
+        if (found) setSelectedName(found[displayFields[0]] || "");
+      }
+    } catch (e) {
+      console.error("EntitySelector fetch error:", e);
     }
   };
 
@@ -82,7 +95,7 @@ export function EntitySelector({
               <button
                 key={item.id}
                 type="button"
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm border-b border-slate-100 last:border-0"
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm border-b border-slate-100 dark:border-slate-700 last:border-0"
                 onClick={() => {
                   onChange(item.id, item[displayFields[0]] || "", item);
                   setSelectedName(item[displayFields[0]] || "");
@@ -102,7 +115,6 @@ export function EntitySelector({
   );
 }
 
-// 便捷封装
 export function CustomerSelector({ value, onChange }: { value: string; onChange: (id: string, name: string, extra?: any) => void }) {
   return <EntitySelector table="customers" value={value} onChange={onChange} placeholder="选择客户..." searchFields={["name", "code"]} displayFields={["name", "country"]} />;
 }
@@ -115,7 +127,6 @@ export function ProductSelector({ value, onChange }: { value: string; onChange: 
   return <EntitySelector table="products" value={value} onChange={onChange} placeholder="选择产品..." searchFields={["name", "code", "oem_number"]} displayFields={["name", "oem_number"]} />;
 }
 
-
 export function OrderSelector({ value, onChange }: { value: string; onChange: (id: string, name: string, extra?: any) => void }) {
-  return <EntitySelector table="orders" value={value} onChange={onChange} placeholder="选择订单..." searchFields={["code", "customer_id"]} displayFields={["code"]} />;
+  return <EntitySelector table="orders" value={value} onChange={onChange} placeholder="选择订单..." searchFields={["code"]} displayFields={["code"]} />;
 }

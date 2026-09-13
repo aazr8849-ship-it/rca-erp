@@ -31,10 +31,7 @@ import {
 
 // 检测是否配置了 Supabase
 const useSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  // 检查环境变量是否存在且不是占位符
-  return !!(url && key && !key.includes("REPLACE_WITH") && url.startsWith("https://"));
+  return true; // 总是启用Supabase（有fallback配置）
 };
 
 export default function CustomersPage() {
