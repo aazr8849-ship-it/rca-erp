@@ -78,12 +78,16 @@ export function GenericFormDialog({ open, onOpenChange, config, onSuccess }: Gen
     }
 
     setSaving(true);
+    console.log('FORM DATA:', JSON.stringify(form));
+    console.log('ITEMS:', JSON.stringify(items));
     try {
+      console.log('SUBMITTING:', JSON.stringify({ ...form, items: config.itemFields ? items.filter(it => it.product_id) : undefined }));
       await config.onSubmit({ ...form, items: config.itemFields ? items.filter(it => it.product_id) : undefined });
       toast.success(`${config.moduleName}创建成功`);
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
+      console.error('CREATE ERROR:', err);
       toast.error(err.message || "创建失败");
     } finally {
       setSaving(false);
