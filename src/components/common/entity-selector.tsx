@@ -10,7 +10,7 @@ const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
 
 async function fetchTable(table: string, search: string, searchFields: string[]) {
-  let url = `${SUPABASE_URL}/rest/v1/${table}?select=*&limit=20`;
+  let url = SUPABASE_URL + "/rest/v1/" + table + "?select=*`${SUPABASE_URL}/rest/v1/${table}?select=*&limit=20`limit=20";
   if (search && searchFields.length > 0) {
     const filters = searchFields.map(f => `${f}.ilike.%${search}%`).join(",");
     url += `&or=${filters}`;

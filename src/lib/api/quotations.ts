@@ -3,7 +3,7 @@ const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
 
 async function supabaseRequest(path: string, method: string, body?: any) {
-  const res = await fetch(`${SUPABASE_URL}${path}`, {
+  const res = await fetch(SUPABASE_URL + path, {
     method,
     headers: {
       "apikey": SUPABASE_KEY,
