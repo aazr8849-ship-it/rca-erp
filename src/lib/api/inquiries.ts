@@ -1,36 +1,34 @@
-// 询盘API - 直接用fetch避免环境变量问题
+// 询盘API - 直接用fetch
 const SUPABASE_URL = "https://odmshppyeeaqgurztpfy.supabase.co";
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
+const SUPABASE_KEY = "sb_publishable_uMcpiqTcs3HUbcZu5asyVw_k_bes_1b";
 
-async function supabaseFetch(table: string, method: string, body?: any, query?: string) {
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query || ""}`;
-  const res = await fetch(url, {
+async function supabaseRequest(path: string, method: string, body?: any) {
+  const res = await fetch(`${SUPABASE_URL}${path}`, {
     method,
     headers: {
       "apikey": SUPABASE_KEY,
       "Authorization": `Bearer ${SUPABASE_KEY}`,
       "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : undefined,
+      "Prefer": method === "POST" ? "return=representation" : "count=exact",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "请求失败");
+    const err = await res.json().catch(() => ({ message: "请求失败" }));
+    throw new Error(err.message || `HTTP ${res.status}`);
   }
   return await res.json();
 }
 
 export async function createInquiry(input: any): Promise<any> {
   const year = new Date().getFullYear();
-  
-  // 获取当前序号
-  const existing = await supabaseFetch("inquiries", "GET", null, `?select=code&code=like.IN-${year}-%`);
-  const seq = String((existing?.length || 0) + 1).padStart(4, "0");
+  // 获取序号
+  const countRes = await supabaseRequest(`/rest/v1/inquiries?select=id&code=like.IN-${year}-%`, "GET");
+  const seq = String((countRes?.length || 0) + 1).padStart(4, "0");
   const code = `IN-${year}-${seq}`;
   
   // 创建询盘
-  const [inquiry] = await supabaseFetch("inquiries", "POST", {
+  const [inquiry] = await supabaseRequest(`/rest/v1/inquiries`, "POST", {
     code, customer_id: input.customer_id, subject: input.subject || "新询盘",
     source: input.source || "email", priority: input.priority || "medium",
     status: "pending", notes: input.notes || "",
@@ -43,7 +41,7 @@ export async function createInquiry(input: any): Promise<any> {
       quantity: it.quantity, unit: it.unit || "个", target_price: it.target_price || null,
     }));
     if (items.length > 0) {
-      await supabaseFetch("inquiry_items", "POST", items);
+      await supabaseRequest(`/rest/v1/inquiry_items`, "POST", items);
     }
   }
   return inquiry;
