@@ -31,7 +31,7 @@ async function supabaseRequest(path: string, method: string, body?: any) {
 export async function createInquiry(input: any): Promise<any> {
   const year = new Date().getFullYear();
   // 获取序号
-  const countRes = await supabaseRequest(`/rest/v1/inquiries?select=id&code=like.IN-${year}-%`, "GET");
+  const countRes = await supabaseRequest("/rest/v1/inquiries?select=id&code=like.IN-"+year+"-%25", "GET");
   const seq = String((countRes?.length || 0) + 1).padStart(4, "0");
   const code = `IN-${year}-${seq}`;
   

@@ -22,7 +22,7 @@ async function supabaseRequest(path: string, method: string, body?: any) {
 
 export async function createPurchaseOrder(input: any): Promise<any> {
   const year = new Date().getFullYear();
-  const countRes = await supabaseRequest(`/rest/v1/purchase_orders?select=id&code=like.PO-${year}-%`, "GET");
+  const countRes = await supabaseRequest("/rest/v1/purchase_orders?select=id&code=like.PO-"+year+"-%25", "GET");
   const seq = String((countRes?.length || 0) + 1).padStart(4, "0");
   const code = `PO-${year}-${seq}`;
   const totalAmount = (input.items || []).reduce((sum: number, it: any) => sum + (Number(it.quantity) * Number(it.unit_price || 0)), 0);

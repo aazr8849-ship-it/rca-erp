@@ -22,7 +22,7 @@ async function supabaseRequest(path: string, method: string, body?: any) {
 
 export async function createQuotation(input: any): Promise<any> {
   const year = new Date().getFullYear();
-  const countRes = await supabaseRequest(`/rest/v1/quotations?select=id&code=like.QT-${year}-%`, "GET");
+  const countRes = await supabaseRequest("/rest/v1/quotations?select=id&code=like.QT-"+year+"-%25", "GET");
   const seq = String((countRes?.length || 0) + 1).padStart(4, "0");
   const code = `QT-${year}-${seq}`;
   const validUntil = new Date(); validUntil.setDate(validUntil.getDate() + 30);

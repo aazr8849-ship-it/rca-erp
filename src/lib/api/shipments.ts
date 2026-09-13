@@ -22,7 +22,7 @@ async function supabaseRequest(path: string, method: string, body?: any) {
 
 export async function createShipment(input: any): Promise<any> {
   const year = new Date().getFullYear();
-  const countRes = await supabaseRequest(`/rest/v1/shipments?select=id&code=like.SH-${year}-%`, "GET");
+  const countRes = await supabaseRequest("/rest/v1/shipments?select=id&code=like.SH-"+year+"-%25", "GET");
   const seq = String((countRes?.length || 0) + 1).padStart(4, "0");
   const code = `SH-${year}-${seq}`;
   
