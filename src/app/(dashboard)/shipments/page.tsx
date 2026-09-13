@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, Ship as ShipIcon } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useQuery } from "@tanstack/react-query";
 import { GenericFormDialog } from "@/components/common/generic-form-dialog";
 import { createShipment } from "@/lib/api/shipments";
 import { PageHeader, ActionButton } from "@/components/common/page-header";

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Eye, FileText, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { useQuery } from "@tanstack/react-query";
 import { GenericFormDialog } from "@/components/common/generic-form-dialog";
 import { createInquiry } from "@/lib/api/inquiries";
 import { PageHeader, ActionButton } from "@/components/common/page-header";
@@ -20,7 +21,16 @@ import { formatDate, generateFormattedCode, SOURCE_LABELS } from "@/lib/utils";
 
 export default function InquiriesPage() {
   const router = useRouter();
-  const { inquiries, customers, addAuditLog } = useStore();
+  const { inquiries: mockInquiries, customers, addAuditLog } = useStore();
+  const { data: supabaseData } = useQuery({
+    queryKey: ["inquiries"],
+    queryFn: async () => {
+      const res = await fetch("/api/inquiries/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const inquiries = supabaseData || mockInquiries;
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");
