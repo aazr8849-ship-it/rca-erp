@@ -21,7 +21,17 @@ import { formatCurrency, formatDate, generateFormattedCode } from "@/lib/utils";
 
 export default function PurchasesPage() {
   const router = useRouter();
-  const { purchaseRequests, purchaseOrders, suppliers, addAuditLog } = useStore();
+  const { purchaseRequests: mockPRs, purchaseOrders: mockPOs, suppliers, addAuditLog } = useStore();
+  const { data: supabasePOs } = useQuery({
+    queryKey: ["purchase-orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/purchases/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const purchaseRequests = mockPRs;
+  const purchaseOrders = supabasePOs || mockPOs;
   const [tab, setTab] = useState("requests");
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");

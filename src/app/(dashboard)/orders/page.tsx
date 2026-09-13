@@ -20,7 +20,16 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { orders } = useStore();
+  const { orders: mockOrders } = useStore();
+  const { data: supabaseData } = useQuery({
+    queryKey: ["orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/orders/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const orders = supabaseData || mockOrders;
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");

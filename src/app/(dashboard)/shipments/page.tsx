@@ -20,7 +20,16 @@ import { formatDate, SHIPPING_METHOD_LABELS } from "@/lib/utils";
 
 export default function ShipmentsPage() {
   const router = useRouter();
-  const { shipments } = useStore();
+  const { shipments: mockShipments } = useStore();
+  const { data: supabaseData } = useQuery({
+    queryKey: ["shipments"],
+    queryFn: async () => {
+      const res = await fetch("/api/shipments/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const shipments = supabaseData || mockShipments;
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");

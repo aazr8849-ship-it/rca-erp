@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Warehouse, ArrowDownToLine, ArrowUpFromLine, Snowflake, Settings2 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader, ActionButton } from "@/components/common/page-header";
 import { FilterBar } from "@/components/common/filter-bar";
 import { SearchInput } from "@/components/common/search-input";
@@ -19,7 +20,16 @@ import { formatDate, MOVEMENT_TYPE_LABELS, cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function InventoryPage() {
-  const { inventory, stockMovements, addAuditLog } = useStore();
+  const { inventory: mockInventory, stockMovements, addAuditLog } = useStore();
+  const { data: supabaseInv } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: async () => {
+      const res = await fetch("/api/inventory/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const inventory = supabaseInv || mockInventory;
   const [tab, setTab] = useState("stock");
   const [search, setSearch] = useState("");
   const [freezeTarget, setFreezeTarget] = useState<Inventory | null>(null);

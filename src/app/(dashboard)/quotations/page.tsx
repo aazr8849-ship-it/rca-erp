@@ -20,7 +20,16 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function QuotationsPage() {
   const router = useRouter();
-  const { quotations } = useStore();
+  const { quotations: mockQuotations } = useStore();
+  const { data: supabaseData } = useQuery({
+    queryKey: ["quotations"],
+    queryFn: async () => {
+      const res = await fetch("/api/quotations/list");
+      const data = await res.json();
+      return data.data || [];
+    },
+  });
+  const quotations = supabaseData || mockQuotations;
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("__all__");
